@@ -10,10 +10,10 @@ import type { AppTabParamList } from "./types";
 const Tab = createBottomTabNavigator<AppTabParamList>();
 
 const TAB_ICONS: Record<keyof AppTabParamList, string> = {
-  Articles: "📰",
-  Store: "🛍️",
-  Events: "🎟️",
-  Profile: "👤"
+  Articles: "A",
+  Store: "S",
+  Events: "E",
+  Profile: "P"
 };
 
 export function AppTabs() {
@@ -35,7 +35,9 @@ export function AppTabs() {
           fontWeight: "600"
         },
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 16 }}>{TAB_ICONS[route.name as keyof AppTabParamList]}</Text>
+          <Text style={{ color, fontSize: 14, fontWeight: "700" }}>
+            {TAB_ICONS[route.name as keyof AppTabParamList]}
+          </Text>
         )
       })}
     >

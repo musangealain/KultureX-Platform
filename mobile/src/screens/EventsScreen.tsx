@@ -34,7 +34,7 @@ export function EventsScreen() {
             key={item.id}
             badge="Event"
             title={item.title}
-            detail={`${item.city} • ${new Date(item.start_at).toLocaleDateString()}`}
+            detail={`${item.city} - ${new Date(item.start_at).toLocaleDateString()}`}
             footer="Ticket booking API is available"
           />
         ))

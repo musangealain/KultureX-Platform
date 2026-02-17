@@ -1,4 +1,6 @@
 from rest_framework import serializers
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import extend_schema_field
 
 from apps.store.models import (
     Brand,
@@ -53,6 +55,7 @@ class CartItemSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "cart", "created_at", "updated_at"]
 
+    @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_line_total(self, obj):
         return obj.line_total
 
@@ -86,6 +89,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
 
+    @extend_schema_field(OpenApiTypes.DECIMAL)
     def get_line_total(self, obj):
         return obj.line_total
 

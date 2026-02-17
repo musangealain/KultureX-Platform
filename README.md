@@ -67,6 +67,14 @@ npm install
 copy .env.example .env
 ```
 
+Mobile Sprint 1 now includes:
+
+- Auth flow (JWT login + persisted session)
+- App navigation (auth stack + bottom tabs)
+- Core screens: Articles, Store, Events, Profile
+
+If testing on a physical device, set `EXPO_PUBLIC_API_BASE_URL` in `mobile/.env` to your machine LAN IP (not `127.0.0.1`).
+
 ### 5. Run the project (recommended)
 
 From repo root:

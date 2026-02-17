@@ -1,64 +1,77 @@
-import { useEffect, useState } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { ActivityIndicator, RefreshControl, StyleSheet, Text, View } from "react-native";
 
+import { InfoCard } from "../components/InfoCard";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { type Article, fetchArticles } from "../features/articles/api";
 
 export function ArticlesScreen() {
   const [items, setItems] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchArticles()
-      .then(setItems)
-      .finally(() => setLoading(false));
+  const load = useCallback(async () => {
+    try {
+      setError(null);
+      const data = await fetchArticles();
+      setItems(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load articles");
+    }
   }, []);
 
+  useEffect(() => {
+    load().finally(() => setLoading(false));
+  }, [load]);
+
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  }, [load]);
+
   if (loading) {
-    return <ActivityIndicator color="#e95a20" />;
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color="#d35420" />
+      </View>
+    );
   }
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.heading}>Articles</Text>
+    <ScreenContainer
+      title="Articles"
+      subtitle="Editorial stories from creators with role-based moderation pipeline"
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#d35420" />}
+    >
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       {items.length ? (
-        items.slice(0, 3).map((item) => (
-          <View key={item.id} style={styles.card}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.copy}>{item.summary || "No summary"}</Text>
-          </View>
+        items.slice(0, 20).map((item) => (
+          <InfoCard
+            key={item.id}
+            badge="Article"
+            title={item.title}
+            detail={item.summary || "No summary provided yet."}
+            footer={`Status: ${item.status}`}
+          />
         ))
       ) : (
-        <Text style={styles.empty}>No articles available.</Text>
+        <InfoCard title="No articles found" detail="Create and publish content to populate this feed." />
       )}
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: 10
+  loadingWrap: {
+    flex: 1,
+    backgroundColor: "#f3ecd9",
+    alignItems: "center",
+    justifyContent: "center"
   },
-  heading: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#171a28"
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: "#d2cab9",
-    borderRadius: 14,
-    backgroundColor: "#fffaf1",
-    padding: 12
-  },
-  title: {
-    fontWeight: "700",
-    color: "#171a28"
-  },
-  copy: {
-    marginTop: 4,
-    color: "#4d504f"
-  },
-  empty: {
-    color: "#4d504f"
+  error: {
+    color: "#9b2c2c",
+    marginBottom: 8
   }
 });

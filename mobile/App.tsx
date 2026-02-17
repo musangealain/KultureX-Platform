@@ -1,19 +1,21 @@
+import "react-native-gesture-handler";
+
 import { StatusBar } from "expo-status-bar";
-import { SafeAreaView, StyleSheet } from "react-native";
-import { KultureXMobileApp } from "./src/App";
+import { NavigationContainer } from "@react-navigation/native";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+
+import { AuthProvider } from "./src/auth/AuthProvider";
+import { RootNavigator } from "./src/navigation/RootNavigator";
 
 export default function App() {
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KultureXMobileApp />
-      <StatusBar style="dark" />
-    </SafeAreaView>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <RootNavigator />
+          <StatusBar style="dark" />
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f2efe5"
-  }
-});

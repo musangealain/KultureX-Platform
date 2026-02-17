@@ -4,6 +4,7 @@ export interface Article {
   id: number;
   title: string;
   summary: string;
+  status: string;
 }
 
 export async function fetchArticles(): Promise<Article[]> {

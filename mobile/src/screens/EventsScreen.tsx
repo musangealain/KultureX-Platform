@@ -1,66 +1,59 @@
 import { useEffect, useState } from "react";
 import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
 
+import { InfoCard } from "../components/InfoCard";
+import { ScreenContainer } from "../components/ScreenContainer";
 import { type EventItem, fetchEvents } from "../features/events/api";
 
 export function EventsScreen() {
   const [items, setItems] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchEvents()
       .then(setItems)
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load events"))
       .finally(() => setLoading(false));
   }, []);
 
   if (loading) {
-    return <ActivityIndicator color="#e95a20" />;
+    return (
+      <View style={styles.loadingWrap}>
+        <ActivityIndicator size="large" color="#d35420" />
+      </View>
+    );
   }
 
   return (
-    <View style={styles.wrapper}>
-      <Text style={styles.heading}>Events</Text>
+    <ScreenContainer title="Events" subtitle="Browse live sessions and booking-ready listings">
+      {error ? <Text style={styles.error}>{error}</Text> : null}
       {items.length ? (
-        items.slice(0, 3).map((item) => (
-          <View key={item.id} style={styles.card}>
-            <Text style={styles.title}>{item.title}</Text>
-            <Text style={styles.copy}>
-              {item.city} · {new Date(item.start_at).toLocaleDateString()}
-            </Text>
-          </View>
+        items.slice(0, 20).map((item) => (
+          <InfoCard
+            key={item.id}
+            badge="Event"
+            title={item.title}
+            detail={`${item.city} • ${new Date(item.start_at).toLocaleDateString()}`}
+            footer="Ticket booking API is available"
+          />
         ))
       ) : (
-        <Text style={styles.empty}>No events available.</Text>
+        <InfoCard title="No events found" detail="Publish events in backend to populate this schedule." />
       )}
-    </View>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    gap: 10
+  loadingWrap: {
+    flex: 1,
+    backgroundColor: "#f3ecd9",
+    alignItems: "center",
+    justifyContent: "center"
   },
-  heading: {
-    fontSize: 22,
-    fontWeight: "700",
-    color: "#171a28"
-  },
-  card: {
-    borderWidth: 1,
-    borderColor: "#d2cab9",
-    borderRadius: 14,
-    backgroundColor: "#fffaf1",
-    padding: 12
-  },
-  title: {
-    fontWeight: "700",
-    color: "#171a28"
-  },
-  copy: {
-    marginTop: 4,
-    color: "#4d504f"
-  },
-  empty: {
-    color: "#4d504f"
+  error: {
+    color: "#9b2c2c",
+    marginBottom: 8
   }
 });

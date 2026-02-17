@@ -1,9 +1,13 @@
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useAuth } from "../auth/useAuth";
+import type { AuthStackParamList } from "../navigation/types";
 
-export function LoginScreen() {
+type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
+
+export function LoginScreen({ navigation }: Props) {
   const { loginWithCredentials } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -60,6 +64,10 @@ export function LoginScreen() {
         <Text style={styles.helper}>
           Use an existing backend user account. Register flow can be added in Sprint 2.
         </Text>
+
+        <Pressable onPress={() => navigation.navigate("Landing")}>
+          <Text style={styles.backLink}>Back to landing</Text>
+        </Pressable>
       </View>
     </View>
   );
@@ -119,5 +127,11 @@ const styles = StyleSheet.create({
   helper: {
     color: "#6b7380",
     fontSize: 12
+  },
+  backLink: {
+    marginTop: 2,
+    color: "#2f4f74",
+    textAlign: "center",
+    fontWeight: "600"
   }
 });

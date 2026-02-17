@@ -4,26 +4,47 @@ export default async function EventsPage() {
   const events = await getEvents().catch(() => []);
 
   return (
-    <div className="container">
-      <h1>Events</h1>
-      <div className="grid">
-        {events.length ? (
-          events.map((eventItem) => (
-            <article className="card" key={eventItem.id}>
-              <h3>{eventItem.title}</h3>
-              <p>
-                {eventItem.venue}, {eventItem.city}
-              </p>
-              <span className="tag">{eventItem.start_at}</span>
-            </article>
-          ))
-        ) : (
-          <article className="card">
-            <h3>No events yet</h3>
-            <p>Organizer workflows are scaffolded in the API and ready for UI forms.</p>
+    <section className="stack">
+      <section className="section page-header reveal">
+        <span className="kicker">Events + Tickets</span>
+        <h1>Discover and book sessions, tours, and festivals</h1>
+        <p>Event listings, ticket types, RSVPs, and booking APIs power the live culture calendar.</p>
+      </section>
+
+      <section className="section reveal d1">
+        <div className="split">
+          <article className="metric">
+            <strong>{events.length}</strong>
+            <span>Published events</span>
           </article>
-        )}
-      </div>
-    </div>
+          <article className="metric">
+            <strong>Bookings</strong>
+            <span>Ticket booking routes live in API</span>
+          </article>
+        </div>
+      </section>
+
+      <section className="section reveal d2">
+        <div className="data-grid">
+          {events.length ? (
+            events.map((eventItem, index) => (
+              <article key={eventItem.id} className={`data-card reveal d${(index % 3) + 1}`}>
+                <span className="badge badge-sand">Event</span>
+                <h3>{eventItem.title}</h3>
+                <p>
+                  {eventItem.venue}, {eventItem.city}
+                </p>
+                <span className="data-meta">{new Date(eventItem.start_at).toLocaleString()}</span>
+              </article>
+            ))
+          ) : (
+            <article className="data-card empty-card">
+              <h3>No events yet</h3>
+              <p>Create events through organizer/admin flows to populate this schedule.</p>
+            </article>
+          )}
+        </div>
+      </section>
+    </section>
   );
 }

@@ -56,10 +56,9 @@ Roles:
 
 - `ADMIN`: platform operations
 - `EDITOR`: article moderation and publishing
-- `CREATOR`: article/video/profile content creation
-- `ORGANIZER`: event creation and ticket management
-- `BRAND`: product/store management
-- `MEMBER`: normal platform member
+- `AUTHOR`: article submission
+- `REGISTERED`: shopping, profile, comments, and event registration
+- `GUEST` (anonymous): read-only platform access
 
 Authorization:
 
@@ -77,7 +76,9 @@ Domain endpoints:
 - `/skate/`
 - `/store/`
 - `/events/`
+- `/events/bookings/`
 - `/community/`
+- `/media/`
 - `/health/`
 
 Conventions:

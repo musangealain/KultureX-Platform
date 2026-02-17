@@ -1,9 +1,14 @@
 from django.db.models import Q
 from rest_framework import permissions, viewsets
 
-from apps.events.models import Event, RSVP, TicketType
-from apps.events.permissions import CanManageEvent, CanManageRSVP
-from apps.events.serializers import EventSerializer, RSVPSerializer, TicketTypeSerializer
+from apps.events.models import Event, RSVP, TicketBooking, TicketType
+from apps.events.permissions import CanManageEvent, CanManageRSVP, CanManageTicketBooking
+from apps.events.serializers import (
+    EventSerializer,
+    RSVPSerializer,
+    TicketBookingSerializer,
+    TicketTypeSerializer,
+)
 from apps.users.models import UserRole
 
 
@@ -49,6 +54,24 @@ class RSVPViewSet(viewsets.ModelViewSet):
         if self.action == "list":
             return [permissions.IsAuthenticated()]
         return super().get_permissions()
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+class TicketBookingViewSet(viewsets.ModelViewSet):
+    queryset = TicketBooking.objects.select_related("user", "event", "ticket_type").all()
+    serializer_class = TicketBookingSerializer
+    permission_classes = [CanManageTicketBooking]
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        user = self.request.user
+        if not user.is_authenticated:
+            return queryset.none()
+        if user.role == UserRole.ADMIN:
+            return queryset
+        return queryset.filter(user=user)
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

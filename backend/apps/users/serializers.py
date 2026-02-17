@@ -31,7 +31,7 @@ class UserSerializer(serializers.ModelSerializer):
         password = validated_data.pop("password", None)
 
         if not request or not request.user.is_authenticated or request.user.role != UserRole.ADMIN:
-            validated_data["role"] = UserRole.MEMBER
+            validated_data["role"] = UserRole.REGISTERED
 
         user = User(**validated_data)
         if password:

@@ -7,7 +7,11 @@ class CanManageEvent(BasePermission):
     def has_permission(self, request, view) -> bool:
         if request.method in SAFE_METHODS:
             return True
-        return bool(request.user and request.user.is_authenticated)
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role == UserRole.ADMIN
+        )
 
     def has_object_permission(self, request, view, obj) -> bool:
         if request.method in SAFE_METHODS:
@@ -30,3 +34,13 @@ class CanManageRSVP(BasePermission):
         if request.user.role == UserRole.ADMIN:
             return True
         return obj.user == request.user
+
+
+class CanManageTicketBooking(BasePermission):
+    def has_permission(self, request, view) -> bool:
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj) -> bool:
+        if request.user.role == UserRole.ADMIN:
+            return True
+        return obj.user_id == request.user.id

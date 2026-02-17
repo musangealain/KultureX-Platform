@@ -7,14 +7,12 @@ from apps.common.models import TimestampedModel
 class UserRole(models.TextChoices):
     ADMIN = "admin", "Admin"
     EDITOR = "editor", "Editor"
-    CREATOR = "creator", "Creator"
-    ORGANIZER = "organizer", "Organizer"
-    BRAND = "brand", "Brand"
-    MEMBER = "member", "Member"
+    AUTHOR = "author", "Author"
+    REGISTERED = "registered", "Registered User"
 
 
 class User(AbstractUser, TimestampedModel):
-    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.MEMBER)
+    role = models.CharField(max_length=20, choices=UserRole.choices, default=UserRole.REGISTERED)
     bio = models.TextField(blank=True)
     avatar_url = models.URLField(blank=True)
 

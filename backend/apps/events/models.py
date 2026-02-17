@@ -10,6 +10,12 @@ class RSVPStatus(models.TextChoices):
     CANCELED = "canceled", "Canceled"
 
 
+class TicketStatus(models.TextChoices):
+    RESERVED = "reserved", "Reserved"
+    CONFIRMED = "confirmed", "Confirmed"
+    CANCELED = "canceled", "Canceled"
+
+
 class Event(TimestampedModel):
     organizer = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -56,3 +62,23 @@ class RSVP(TimestampedModel):
 
     def __str__(self) -> str:
         return f"{self.user.username} - {self.event.title}"
+
+
+class TicketBooking(TimestampedModel):
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="bookings")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ticket_bookings")
+    ticket_type = models.ForeignKey(
+        TicketType,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    status = models.CharField(max_length=20, choices=TicketStatus.choices, default=TicketStatus.RESERVED)
+
+    class Meta:
+        unique_together = ("event", "user", "ticket_type")
+
+    def __str__(self) -> str:
+        return f"Booking<{self.event.title}:{self.user.username}>"

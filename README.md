@@ -27,6 +27,7 @@ This repository is structured as a modular monorepo:
 - Security-first defaults (env-based secrets, secure headers, CORS allowlist, strict auth classes)
 
 See `docs/architecture.md` for full details.
+Detailed implementation output is documented in `docs/implementation-blueprint.md`.
 
 ## Quick Start
 

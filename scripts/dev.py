@@ -13,6 +13,7 @@ Optional:
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
@@ -27,15 +28,36 @@ WEB_DIR = ROOT / "web"
 MOBILE_DIR = ROOT / "mobile"
 
 
-def resolve_backend_python() -> str:
+def is_windows() -> bool:
+    return os.name == "nt"
+
+
+def resolve_backend_command() -> list[str]:
     candidates = [
         BACKEND_DIR / ".venv" / "Scripts" / "python.exe",  # Windows
         BACKEND_DIR / ".venv" / "bin" / "python",  # Unix
     ]
     for candidate in candidates:
         if candidate.exists():
-            return str(candidate)
-    return sys.executable
+            return [str(candidate), "manage.py", "runserver"]
+
+    if is_windows():
+        py_launcher = shutil.which("py")
+        if py_launcher:
+            return [py_launcher, "manage.py", "runserver"]
+
+    return [sys.executable, "manage.py", "runserver"]
+
+
+def resolve_npm_executable() -> str:
+    if is_windows():
+        npm_cmd = shutil.which("npm.cmd")
+        if npm_cmd:
+            return npm_cmd
+    npm = shutil.which("npm")
+    if npm:
+        return npm
+    return "npm"
 
 
 def command_exists(name: str) -> bool:
@@ -49,14 +71,20 @@ def stream_output(name: str, proc: subprocess.Popen[str]) -> None:
 
 
 def start_process(name: str, cmd: list[str], cwd: Path) -> tuple[subprocess.Popen[str], threading.Thread]:
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(cwd),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-    )
+    try:
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(cwd),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+        )
+    except FileNotFoundError as exc:
+        readable_cmd = " ".join(cmd)
+        raise RuntimeError(
+            f"Failed to start '{name}'. Command not found: {readable_cmd}",
+        ) from exc
     thread = threading.Thread(target=stream_output, args=(name, proc), daemon=True)
     thread.start()
     return proc, thread
@@ -83,18 +111,19 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    if not command_exists("npm"):
+    npm_executable = resolve_npm_executable()
+    if not command_exists(Path(npm_executable).name):
         print("Error: npm is not available in PATH.", file=sys.stderr)
         return 1
 
-    backend_python = resolve_backend_python()
+    backend_cmd = resolve_backend_command()
 
     services: list[tuple[str, list[str], Path]] = [
-        ("api", [backend_python, "manage.py", "runserver"], BACKEND_DIR),
-        ("web", ["npm", "run", "dev"], WEB_DIR),
+        ("api", backend_cmd, BACKEND_DIR),
+        ("web", [npm_executable, "run", "dev"], WEB_DIR),
     ]
     if args.mobile:
-        services.append(("mobile", ["npm", "run", "start"], MOBILE_DIR))
+        services.append(("mobile", [npm_executable, "run", "start"], MOBILE_DIR))
 
     processes: list[subprocess.Popen[str]] = []
     threads: list[threading.Thread] = []

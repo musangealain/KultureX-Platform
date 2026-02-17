@@ -12,7 +12,7 @@ class CanManageArticle(BasePermission):
         return request.user.role in {
             UserRole.ADMIN,
             UserRole.EDITOR,
-            UserRole.CREATOR,
+            UserRole.AUTHOR,
         }
 
     def has_object_permission(self, request, view, obj) -> bool:

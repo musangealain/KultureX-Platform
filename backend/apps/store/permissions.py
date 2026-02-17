@@ -34,3 +34,18 @@ class CanManageOrder(BasePermission):
         if request.user.role == UserRole.ADMIN:
             return True
         return obj.user == request.user
+
+
+class IsOwnerOrAdmin(BasePermission):
+    def has_permission(self, request, view) -> bool:
+        return bool(request.user and request.user.is_authenticated)
+
+    def has_object_permission(self, request, view, obj) -> bool:
+        if request.user.role == UserRole.ADMIN:
+            return True
+        owner_id = getattr(obj, "user_id", None)
+        if owner_id is None and hasattr(obj, "cart"):
+            owner_id = obj.cart.user_id
+        if owner_id is None and hasattr(obj, "order"):
+            owner_id = obj.order.user_id
+        return owner_id == request.user.id

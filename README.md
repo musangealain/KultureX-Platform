@@ -30,7 +30,13 @@ See `docs/architecture.md` for full details.
 
 ## Quick Start
 
-### 1. Backend
+### 1. Infrastructure
+
+```bash
+docker compose up -d
+```
+
+### 2. Backend setup (one-time)
 
 ```bash
 cd backend
@@ -40,30 +46,50 @@ pip install -r requirements.txt
 copy .env.example .env
 python manage.py makemigrations
 python manage.py migrate
-python manage.py runserver
 ```
 
 API root: `http://127.0.0.1:8000/api/v1/`
 
-### 2. Web
+### 3. Web setup (one-time)
 
 ```bash
 cd web
 npm install
 copy .env.example .env.local
-npm run dev
 ```
 
-Web app: `http://localhost:3000`
-
-### 3. Mobile
+### 4. Mobile setup (one-time)
 
 ```bash
 cd mobile
 npm install
 copy .env.example .env
-npm run start
 ```
+
+### 5. Run the project (recommended)
+
+From repo root:
+
+```bash
+npm run dev
+```
+
+This starts:
+
+- Django API (`backend`)
+- Next.js web (`web`)
+
+Optional (include mobile too):
+
+```bash
+npm run dev:mobile
+```
+
+Web app: `http://localhost:3000`
+
+## Why This Strategy
+
+KultureX is a monorepo with independent apps. Keeping API/web/mobile as separate processes is the correct scalable architecture. The root dev runner is only orchestration for convenience, not a coupling of runtimes.
 
 ## Implementation Status
 

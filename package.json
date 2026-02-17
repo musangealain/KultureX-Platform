@@ -1,0 +1,12 @@
+{
+  "name": "kulturex-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "python scripts/dev.py",
+    "dev:mobile": "python scripts/dev.py --mobile",
+    "dev:api": "python backend/manage.py runserver",
+    "dev:web": "npm --prefix web run dev",
+    "dev:mobile:only": "npm --prefix mobile run start"
+  }
+}

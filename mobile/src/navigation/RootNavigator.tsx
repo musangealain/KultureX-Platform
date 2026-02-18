@@ -1,12 +1,15 @@
+import { useState } from "react";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "../auth/useAuth";
+import { LandingScreen } from "../screens/shop/LandingScreen";
 import { colors } from "../theme/tokens";
 import { AuthStack } from "./AuthStack";
 import { ShopStack } from "./ShopStack";
 
 export function RootNavigator() {
   const { isInitializing, accessToken, isGuest } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
 
   if (isInitializing) {
     return (
@@ -14,6 +17,10 @@ export function RootNavigator() {
         <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
+  }
+
+  if (showLanding) {
+    return <LandingScreen onGetStarted={() => setShowLanding(false)} />;
   }
 
   if (!accessToken && !isGuest) {

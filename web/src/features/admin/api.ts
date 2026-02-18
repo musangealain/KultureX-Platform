@@ -1,0 +1,228 @@
+import { normalizeList, type ListResponse } from "@/lib/api/types";
+
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+
+export type UserRole = "admin" | "editor" | "author" | "registered";
+
+export type AuthTokens = {
+  access: string;
+  refresh: string;
+};
+
+export type AdminUser = {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  bio: string;
+  avatar_url: string;
+};
+
+export type AdminAnalytics = {
+  users_total: number;
+  articles_total: number;
+  products_total: number;
+  orders_total: number;
+  events_total: number;
+  ticket_bookings_total: number;
+};
+
+export type Brand = {
+  id: number;
+  name: string;
+  description: string;
+  logo_url: string;
+  owner: number;
+};
+
+export type Product = {
+  id: number;
+  brand: number;
+  name: string;
+  description: string;
+  price: string;
+  image_url: string;
+  is_active: boolean;
+};
+
+export type EventItem = {
+  id: number;
+  title: string;
+  description: string;
+  venue: string;
+  city: string;
+  start_at: string;
+  end_at: string;
+  capacity: number;
+  cover_image_url: string;
+  is_published: boolean;
+  organizer: number;
+};
+
+export type Article = {
+  id: number;
+  title: string;
+  summary: string;
+  status: string;
+  author_username: string;
+  published_at: string | null;
+};
+
+type RequestOptions = Omit<RequestInit, "body"> & {
+  token?: string;
+  body?: unknown;
+};
+
+function getErrorMessage(payload: unknown, fallback: string): string {
+  if (payload && typeof payload === "object") {
+    const record = payload as Record<string, unknown>;
+    if (typeof record.detail === "string") {
+      return record.detail;
+    }
+    const firstKey = Object.keys(record)[0];
+    if (firstKey) {
+      const value = record[firstKey];
+      if (Array.isArray(value) && typeof value[0] === "string") {
+        return value[0];
+      }
+      if (typeof value === "string") {
+        return value;
+      }
+    }
+  }
+  return fallback;
+}
+
+async function adminRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const headers = new Headers(options.headers ?? {});
+  headers.set("Content-Type", "application/json");
+  if (options.token) {
+    headers.set("Authorization", `Bearer ${options.token}`);
+  }
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers,
+    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+    cache: "no-store"
+  });
+
+  const text = await response.text();
+  const payload = text ? (JSON.parse(text) as unknown) : null;
+
+  if (!response.ok) {
+    const fallback = `Request failed (${response.status})`;
+    throw new Error(getErrorMessage(payload, fallback));
+  }
+
+  return payload as T;
+}
+
+export async function loginAdmin(username: string, password: string): Promise<AuthTokens> {
+  return adminRequest<AuthTokens>("/auth/token/", {
+    method: "POST",
+    body: { username, password }
+  });
+}
+
+export async function getMe(token: string): Promise<AdminUser> {
+  return adminRequest<AdminUser>("/auth/me/", { token });
+}
+
+export async function getAnalytics(token: string): Promise<AdminAnalytics> {
+  return adminRequest<AdminAnalytics>("/admin/analytics/", { token });
+}
+
+export async function listUsers(token: string): Promise<AdminUser[]> {
+  const data = await adminRequest<ListResponse<AdminUser>>("/users/", { token });
+  return normalizeList(data);
+}
+
+export async function updateUserRole(token: string, id: number, role: UserRole): Promise<AdminUser> {
+  return adminRequest<AdminUser>(`/users/${id}/`, {
+    method: "PATCH",
+    token,
+    body: { role }
+  });
+}
+
+export async function listBrands(token: string): Promise<Brand[]> {
+  const data = await adminRequest<ListResponse<Brand>>("/store/brands/", { token });
+  return normalizeList(data);
+}
+
+export async function createBrand(
+  token: string,
+  payload: Pick<Brand, "name" | "description" | "logo_url">
+): Promise<Brand> {
+  return adminRequest<Brand>("/store/brands/", {
+    method: "POST",
+    token,
+    body: payload
+  });
+}
+
+export async function listProducts(token: string): Promise<Product[]> {
+  const data = await adminRequest<ListResponse<Product>>("/store/products/", { token });
+  return normalizeList(data);
+}
+
+export async function createProduct(
+  token: string,
+  payload: Pick<Product, "brand" | "name" | "description" | "price" | "image_url" | "is_active">
+): Promise<Product> {
+  return adminRequest<Product>("/store/products/", {
+    method: "POST",
+    token,
+    body: payload
+  });
+}
+
+export async function listEvents(token: string): Promise<EventItem[]> {
+  const data = await adminRequest<ListResponse<EventItem>>("/events/", { token });
+  return normalizeList(data);
+}
+
+export async function createEvent(
+  token: string,
+  payload: Pick<
+    EventItem,
+    "title" | "description" | "venue" | "city" | "start_at" | "end_at" | "capacity" | "cover_image_url" | "is_published"
+  >
+): Promise<EventItem> {
+  return adminRequest<EventItem>("/events/", {
+    method: "POST",
+    token,
+    body: payload
+  });
+}
+
+export async function listArticles(token: string): Promise<Article[]> {
+  const data = await adminRequest<ListResponse<Article>>("/articles/", { token });
+  return normalizeList(data);
+}
+
+export async function approveArticle(token: string, id: number, reviewNotes = ""): Promise<Article> {
+  return adminRequest<Article>(`/articles/${id}/approve/`, {
+    method: "POST",
+    token,
+    body: { review_notes: reviewNotes }
+  });
+}
+
+export async function rejectArticle(token: string, id: number, reviewNotes = ""): Promise<Article> {
+  return adminRequest<Article>(`/articles/${id}/reject/`, {
+    method: "POST",
+    token,
+    body: { review_notes: reviewNotes }
+  });
+}
+
+export async function publishArticle(token: string, id: number): Promise<Article> {
+  return adminRequest<Article>(`/articles/${id}/publish/`, {
+    method: "POST",
+    token
+  });
+}

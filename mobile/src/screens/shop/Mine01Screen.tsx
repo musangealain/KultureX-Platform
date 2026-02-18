@@ -1,5 +1,5 @@
 import { useNavigation } from "@react-navigation/native";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ShopScreen } from "../../components/shop/ShopScreen";
 import { messageSamples } from "../../data/shop";
@@ -21,15 +21,12 @@ export function Mine01Screen() {
   return (
     <ShopScreen title="Mine" subtitle="Your shopping account center">
       <View style={styles.profileCard}>
-        <Image
-          source={{
-            uri: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"
-          }}
-          style={styles.avatar}
-        />
+        <View style={styles.avatar}>
+          <Text style={styles.avatarLabel}>MA</Text>
+        </View>
         <View>
-          <Text style={styles.profileName}>Hasan Mahmud</Text>
-          <Text style={styles.profileEmail}>riko.fashion.shop@gmail.com</Text>
+          <Text style={styles.profileName}>Musange Muyango Alain</Text>
+          <Text style={styles.profileEmail}>musange.alain@kulturex.app</Text>
         </View>
       </View>
 
@@ -37,7 +34,7 @@ export function Mine01Screen() {
         {menuItems.map((item) => (
           <Pressable key={item.label} style={styles.menuItem} onPress={() => navigation.navigate(item.route)}>
             <Text style={styles.menuText}>{item.label}</Text>
-            <Text style={styles.arrow}>›</Text>
+            <Text style={styles.arrow}>{">"}</Text>
           </Pressable>
         ))}
       </View>
@@ -70,7 +67,16 @@ const styles = StyleSheet.create({
   avatar: {
     width: 58,
     height: 58,
-    borderRadius: 58
+    borderRadius: 58,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#000000"
+  },
+  avatarLabel: {
+    color: "#ffffff",
+    fontSize: 18,
+    fontWeight: "800",
+    letterSpacing: 0.5
   },
   profileName: {
     color: colors.textPrimary,

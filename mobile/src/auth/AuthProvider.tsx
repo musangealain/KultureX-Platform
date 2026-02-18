@@ -1,12 +1,14 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { createContext, useCallback, useEffect, useMemo, useState } from "react";
 
-import { getMe, login, type AuthUser } from "../features/auth/api";
+import { DEMO_USER, getMe, isDemoCredentials, login, type AuthUser } from "../features/auth/api";
 import type { AuthContextValue } from "./types";
 
 const ACCESS_TOKEN_KEY = "kulturex_access_token";
 const REFRESH_TOKEN_KEY = "kulturex_refresh_token";
 const GUEST_MODE_KEY = "kulturex_guest_mode";
+const DEMO_ACCESS_TOKEN = "kulturex-demo-access-token";
+const DEMO_REFRESH_TOKEN = "kulturex-demo-refresh-token";
 
 export const AuthContext = createContext<AuthContextValue | null>(null);
 
@@ -38,11 +40,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
       return;
     }
+    if (accessToken === DEMO_ACCESS_TOKEN) {
+      setUser(DEMO_USER);
+      return;
+    }
     const profile = await getMe(accessToken);
     setUser(profile);
   }, [accessToken]);
 
   const loginWithCredentials = useCallback(async (username: string, password: string) => {
+    if (isDemoCredentials(username.trim(), password)) {
+      setIsGuest(false);
+      setAccessToken(DEMO_ACCESS_TOKEN);
+      setRefreshToken(DEMO_REFRESH_TOKEN);
+      setUser(DEMO_USER);
+      await AsyncStorage.multiSet([
+        [ACCESS_TOKEN_KEY, DEMO_ACCESS_TOKEN],
+        [REFRESH_TOKEN_KEY, DEMO_REFRESH_TOKEN],
+        [GUEST_MODE_KEY, "0"]
+      ]);
+      return;
+    }
+
     const tokens = await login(username, password);
     setIsGuest(false);
     setAccessToken(tokens.access);
@@ -76,6 +95,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (!storedAccess) {
           setIsGuest(storedGuest);
+          setIsInitializing(false);
+          return;
+        }
+
+        if (storedAccess === DEMO_ACCESS_TOKEN) {
+          setAccessToken(DEMO_ACCESS_TOKEN);
+          setRefreshToken(storedRefresh || DEMO_REFRESH_TOKEN);
+          setIsGuest(false);
+          setUser(DEMO_USER);
           setIsInitializing(false);
           return;
         }

@@ -50,6 +50,21 @@ const seededDrop: DropProduct[] = [
   }
 ];
 
+const shopCategories = ["Dresses", "Jackets", "Jeans", "Shoes", "Bags", "Accessories"];
+
+const cartSummary = [
+  { label: "Subtotal", value: "$483.00" },
+  { label: "Shipping", value: "$17.00" },
+  { label: "Total", value: "$500.00" }
+];
+
+const wishlistItems = ["Roller Rabbit Tee", "Axel Arigato Sneaker", "Herschel Utility Bag"];
+const orderState = [
+  { name: "Order #5538", status: "Transit" },
+  { name: "Order #5524", status: "Accepted" },
+  { name: "Order #5501", status: "Delivered" }
+];
+
 function normalizeProducts(products: Product[]): DropProduct[] {
   if (!products.length) {
     return seededDrop;
@@ -66,13 +81,6 @@ function normalizeProducts(products: Product[]): DropProduct[] {
   }));
 }
 
-const shop3dArchitecture = [
-  "Hero WebGL canvas via React Three Fiber for rotating product models.",
-  "Scroll-driven camera transitions between categories and hero products.",
-  "Fallback CSS depth cards for lower-end devices and reduced-motion preference.",
-  "SKU panel overlays powered by existing store API for inventory and add-to-cart."
-];
-
 export default async function StorePage() {
   const fetched = await getProducts().catch(() => []);
   const products = normalizeProducts(fetched);
@@ -80,17 +88,31 @@ export default async function StorePage() {
   return (
     <section className="stack">
       <section className="section reveal">
-        <span className="eyebrow">Shop / 3D Commerce</span>
-        <h1 className="page-title">Streetwear drops presented in depth, not flat grids.</h1>
+        <span className="eyebrow">Shop / Commerce</span>
+        <h1 className="page-title">Shopping-first web flow aligned with the mobile experience.</h1>
         <p className="page-subtitle">
-          This concept uses 3D-aware product cards today and is structured for a Three.js hero scene in Phase 2.
+          Use the top shop navigation to jump between categories, cart, wishlist, orders, and account center.
         </p>
+      </section>
+
+      <section id="categories" className="section reveal d1">
+        <header className="section-head">
+          <h2>Categories</h2>
+          <p>Same structure as mobile category chips.</p>
+        </header>
+        <div className="tag-row">
+          {shopCategories.map((category) => (
+            <span key={category} className="tag">
+              {category}
+            </span>
+          ))}
+        </div>
       </section>
 
       <section className="shop-stage reveal d1">
         <header className="section-head">
           <h2>Drop Room</h2>
-          <p>Hover cards simulate depth while preserving fast loading and accessibility.</p>
+          <p>Shop cards mirror product hierarchy used in the mobile app.</p>
         </header>
         <div className="shop-grid">
           {products.map((product) => (
@@ -112,19 +134,63 @@ export default async function StorePage() {
         </div>
       </section>
 
-      <section className="section reveal d2">
+      <section id="cart" className="section reveal d2">
         <header className="section-head">
-          <h2>WebGL Upgrade Path</h2>
-          <p>Production-ready direction for a futuristic premium shopping experience.</p>
+          <h2>Cart</h2>
+          <p>Checkout summary and totals from the mobile-inspired pattern.</p>
         </header>
         <ul className="timeline">
-          {shop3dArchitecture.map((item) => (
-            <li key={item}>
-              <strong>3D System Node</strong>
-              <span>{item}</span>
+          {cartSummary.map((item) => (
+            <li key={item.label}>
+              <strong>{item.label}</strong>
+              <span>{item.value}</span>
             </li>
           ))}
         </ul>
+      </section>
+
+      <section id="wishlist" className="section reveal d2">
+        <header className="section-head">
+          <h2>Wishlist</h2>
+          <p>Saved products synced with customer intent.</p>
+        </header>
+        <ul className="timeline">
+          {wishlistItems.map((item) => (
+            <li key={item}>
+              <strong>{item}</strong>
+              <span>Saved for later</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="orders" className="section reveal d3">
+        <header className="section-head">
+          <h2>Orders</h2>
+          <p>Live status flow matching mobile order tracking states.</p>
+        </header>
+        <ul className="timeline">
+          {orderState.map((item) => (
+            <li key={item.name}>
+              <strong>{item.name}</strong>
+              <span>{item.status}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section id="mine" className="section reveal d3">
+        <header className="section-head">
+          <h2>Mine</h2>
+          <p>Account center links: profile, addresses, payment methods, and settings.</p>
+        </header>
+        <div className="tag-row">
+          <span className="tag">Profile</span>
+          <span className="tag">Address</span>
+          <span className="tag">Payment</span>
+          <span className="tag">Settings</span>
+          <span className="tag">Support Messages</span>
+        </div>
       </section>
     </section>
   );

@@ -15,7 +15,7 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 export function AuthStack() {
   return (
     <Stack.Navigator
-      initialRouteName="Splash01"
+      initialRouteName="Login"
       screenOptions={{
         headerShown: false,
         animation: "fade_from_bottom"

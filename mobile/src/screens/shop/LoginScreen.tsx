@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
 import { useAuth } from "../../auth/useAuth";
+import { DEMO_CREDENTIALS } from "../../features/auth/api";
 import type { AuthStackParamList } from "../../navigation/types";
 import { colors, radii } from "../../theme/tokens";
 
@@ -10,8 +11,8 @@ type Props = NativeStackScreenProps<AuthStackParamList, "Login">;
 
 export function ShopLoginScreen({ navigation }: Props) {
   const { loginWithCredentials, continueAsGuest } = useAuth();
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
+  const [username, setUsername] = useState<string>(DEMO_CREDENTIALS.username);
+  const [password, setPassword] = useState<string>(DEMO_CREDENTIALS.password);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -41,6 +42,11 @@ export function ShopLoginScreen({ navigation }: Props) {
       <View style={styles.card}>
         <Text style={styles.title}>Login</Text>
         <Text style={styles.subtitle}>Sign in to sync cart, orders, and profile across devices.</Text>
+        <View style={styles.demoCard}>
+          <Text style={styles.demoLabel}>Demo Credentials</Text>
+          <Text style={styles.demoText}>Username: {DEMO_CREDENTIALS.username}</Text>
+          <Text style={styles.demoText}>Password: {DEMO_CREDENTIALS.password}</Text>
+        </View>
 
         <TextInput
           value={username}
@@ -102,6 +108,22 @@ const styles = StyleSheet.create({
   subtitle: {
     color: colors.textSecondary,
     marginBottom: 8
+  },
+  demoCard: {
+    borderWidth: 1,
+    borderColor: colors.surfaceBorder,
+    borderRadius: radii.md,
+    padding: 10,
+    backgroundColor: colors.surfaceMuted
+  },
+  demoLabel: {
+    color: colors.textPrimary,
+    fontWeight: "800",
+    marginBottom: 4
+  },
+  demoText: {
+    color: colors.textSecondary,
+    fontSize: 12
   },
   input: {
     borderWidth: 1,

@@ -1,25 +1,26 @@
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 import { useAuth } from "../auth/useAuth";
-import { AppTabs } from "./AppTabs";
+import { colors } from "../theme/tokens";
 import { AuthStack } from "./AuthStack";
+import { ShopStack } from "./ShopStack";
 
 export function RootNavigator() {
-  const { isInitializing, accessToken } = useAuth();
+  const { isInitializing, accessToken, isGuest } = useAuth();
 
   if (isInitializing) {
     return (
       <View style={styles.loadingWrap}>
-        <ActivityIndicator size="large" color="#d35420" />
+        <ActivityIndicator size="large" color={colors.accent} />
       </View>
     );
   }
 
-  if (!accessToken) {
+  if (!accessToken && !isGuest) {
     return <AuthStack />;
   }
 
-  return <AppTabs />;
+  return <ShopStack />;
 }
 
 const styles = StyleSheet.create({
@@ -27,6 +28,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f3ecd9"
+    backgroundColor: colors.screenBg
   }
 });

@@ -1,50 +1,79 @@
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { ArticlesScreen } from "../screens/ArticlesScreen";
-import { EventsScreen } from "../screens/EventsScreen";
-import { ProfileScreen } from "../screens/ProfileScreen";
-import { StoreScreen } from "../screens/StoreScreen";
-import type { AppTabParamList } from "./types";
+import { Categorie01Screen } from "../screens/shop/Categorie01Screen";
+import { Categorie02Screen } from "../screens/shop/Categorie02Screen";
+import { Mine01Screen } from "../screens/shop/Mine01Screen";
+import { MyCart01Screen } from "../screens/shop/MyCart01Screen";
+import { WishlistScreen } from "../screens/shop/WishlistScreen";
+import { colors, radii } from "../theme/tokens";
+import type { MainTabParamList } from "./types";
 
-const Tab = createBottomTabNavigator<AppTabParamList>();
+const Tab = createBottomTabNavigator<MainTabParamList>();
 
-const TAB_ICONS: Record<keyof AppTabParamList, string> = {
-  Articles: "A",
-  Store: "S",
-  Events: "E",
-  Profile: "P"
+const TAB_LABEL: Record<keyof MainTabParamList, string> = {
+  Categorie01: "Home",
+  Categorie02: "Category",
+  MyCart01: "Cart",
+  Wishlist: "Wishlist",
+  Mine01: "Mine"
+};
+
+const TAB_GLYPH: Record<keyof MainTabParamList, string> = {
+  Categorie01: "◉",
+  Categorie02: "◌",
+  MyCart01: "◍",
+  Wishlist: "♡",
+  Mine01: "◉"
 };
 
 export function AppTabs() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        headerShown: true,
-        headerStyle: {
-          backgroundColor: "#f7f0df"
-        },
-        headerTintColor: "#171a28",
-        tabBarStyle: {
-          backgroundColor: "#f7f0df",
-          borderTopColor: "#d8ceb8"
-        },
-        tabBarActiveTintColor: "#d35420",
-        tabBarInactiveTintColor: "#586070",
-        tabBarLabelStyle: {
-          fontWeight: "600"
-        },
+        headerShown: false,
+        tabBarStyle: styles.tabBar,
+        tabBarActiveTintColor: colors.accent,
+        tabBarInactiveTintColor: colors.textMuted,
+        tabBarLabelStyle: styles.tabLabel,
         tabBarIcon: ({ color }) => (
-          <Text style={{ color, fontSize: 14, fontWeight: "700" }}>
-            {TAB_ICONS[route.name as keyof AppTabParamList]}
-          </Text>
-        )
+          <View style={styles.iconWrap}>
+            <Text style={[styles.iconGlyph, { color }]}>{TAB_GLYPH[route.name as keyof MainTabParamList]}</Text>
+          </View>
+        ),
+        tabBarLabel: TAB_LABEL[route.name as keyof MainTabParamList]
       })}
     >
-      <Tab.Screen name="Articles" component={ArticlesScreen} />
-      <Tab.Screen name="Store" component={StoreScreen} />
-      <Tab.Screen name="Events" component={EventsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Categorie01" component={Categorie01Screen} />
+      <Tab.Screen name="Categorie02" component={Categorie02Screen} />
+      <Tab.Screen name="MyCart01" component={MyCart01Screen} />
+      <Tab.Screen name="Wishlist" component={WishlistScreen} />
+      <Tab.Screen name="Mine01" component={Mine01Screen} />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  tabBar: {
+    height: 74,
+    paddingTop: 8,
+    paddingBottom: 10,
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.surfaceBorder
+  },
+  tabLabel: {
+    fontWeight: "700",
+    fontSize: 11
+  },
+  iconWrap: {
+    minWidth: 26,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radii.pill
+  },
+  iconGlyph: {
+    fontSize: 14,
+    fontWeight: "800"
+  }
+});

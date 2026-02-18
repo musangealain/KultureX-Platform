@@ -18,7 +18,7 @@ const spaceMono = Space_Mono({
 
 export const metadata: Metadata = {
   title: "KultureX",
-  description: "Youth culture platform for skate, fashion, events, and creators"
+  description: "KultureX: youth culture platform for skate, fashion, events, and creators"
 };
 
 export default function RootLayout({
@@ -50,7 +50,7 @@ export default function RootLayout({
           </header>
           <main className="page-shell">{children}</main>
           <footer className="site-footer">
-            <p>KultureX platform for stories, skate scenes, drops, and live events.</p>
+            <p>KultureX digital culture system: stories, skate scenes, drops, live events, and creator identity.</p>
           </footer>
         </div>
       </body>

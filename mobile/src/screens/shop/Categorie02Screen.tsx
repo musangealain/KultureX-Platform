@@ -1,13 +1,39 @@
 import { useNavigation } from "@react-navigation/native";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ProductCard } from "../../components/shop/ProductCard";
 import { ShopScreen } from "../../components/shop/ShopScreen";
-import { demoCategories, demoProducts } from "../../data/shop";
+import { demoCategories, demoProducts, mapBackendProductsToShopProducts, type ShopProduct } from "../../data/shop";
+import { fetchProducts } from "../../features/store/api";
 import { colors, radii } from "../../theme/tokens";
 
 export function Categorie02Screen() {
   const navigation = useNavigation<any>();
+  const [products, setProducts] = useState<ShopProduct[]>(demoProducts);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchProducts()
+      .then((items) => {
+        if (!mounted || !items.length) {
+          return;
+        }
+        setProducts(mapBackendProductsToShopProducts(items));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (mounted) {
+          setLoadingProducts(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <ShopScreen title="Categories" subtitle="Search category and browse products">
@@ -16,7 +42,7 @@ export function Categorie02Screen() {
           <Text style={styles.searchText}>Search categories...</Text>
         </View>
         <Pressable style={styles.filterBtn} onPress={() => navigation.navigate("Filters")}>
-          <Text style={styles.filterText}>⚙</Text>
+          <Text style={styles.filterText}>F</Text>
         </Pressable>
       </View>
 
@@ -30,9 +56,16 @@ export function Categorie02Screen() {
       </View>
 
       <View style={styles.listWrap}>
-        {demoProducts.map((product) => (
-          <ProductCard key={product.id} product={product} onPress={() => navigation.navigate("ProductDetails02")} />
-        ))}
+        {loadingProducts ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={styles.loadingText}>Loading products...</Text>
+          </View>
+        ) : (
+          products.map((product) => (
+            <ProductCard key={product.id} product={product} onPress={() => navigation.navigate("ProductDetails02", { product })} />
+          ))
+        )}
       </View>
     </ShopScreen>
   );
@@ -93,5 +126,16 @@ const styles = StyleSheet.create({
   },
   listWrap: {
     gap: 10
+  },
+  loadingRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14
+  },
+  loadingText: {
+    color: colors.textMuted
   }
 });

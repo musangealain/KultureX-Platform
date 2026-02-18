@@ -6,6 +6,7 @@ export type ShopCategory = {
 
 export type ShopProduct = {
   id: string;
+  backendId?: number;
   name: string;
   brand: string;
   price: number;
@@ -27,6 +28,14 @@ export type UiKitScreenMeta = {
   label: string;
   subtitle: string;
   image: string;
+};
+
+export type BackendProductSeed = {
+  id: number;
+  name: string;
+  description: string;
+  price: string;
+  image_url: string;
 };
 
 export const demoCategories: ShopCategory[] = [
@@ -197,3 +206,17 @@ export const uiKitFlow: UiKitScreenMeta[] = [
   { id: "AudioCall", label: "51. Audio Call", subtitle: "Support call UI", image: demoProducts[1].image },
   { id: "VideoCall", label: "52. Video Call", subtitle: "Video support UI", image: demoProducts[2].image }
 ];
+
+export function mapBackendProductsToShopProducts(products: BackendProductSeed[]): ShopProduct[] {
+  return products.map((product, index) => ({
+    id: `api-${product.id}`,
+    backendId: product.id,
+    name: product.name,
+    brand: ["KultureX Brand", "Streetline", "Urban Core", "Youth Studio"][index % 4],
+    price: Number(product.price),
+    rating: 4 + (index % 10) / 10,
+    category: demoCategories[index % demoCategories.length].id,
+    image: product.image_url || demoProducts[index % demoProducts.length].image,
+    description: product.description || "Product description coming from backend catalog."
+  }));
+}

@@ -1,13 +1,41 @@
 import { useNavigation } from "@react-navigation/native";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { useEffect, useMemo, useState } from "react";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { ProductCard } from "../../components/shop/ProductCard";
 import { ShopScreen } from "../../components/shop/ShopScreen";
-import { demoCategories, demoProducts, promoSlides } from "../../data/shop";
+import { demoCategories, demoProducts, mapBackendProductsToShopProducts, promoSlides, type ShopProduct } from "../../data/shop";
+import { fetchProducts } from "../../features/store/api";
 import { colors, radii, spacing } from "../../theme/tokens";
 
 export function Categorie01Screen() {
   const navigation = useNavigation<any>();
+  const [products, setProducts] = useState<ShopProduct[]>(demoProducts);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+
+    fetchProducts()
+      .then((items) => {
+        if (!mounted || !items.length) {
+          return;
+        }
+        setProducts(mapBackendProductsToShopProducts(items));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (mounted) {
+          setLoadingProducts(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const topProducts = useMemo(() => products.slice(0, 4), [products]);
 
   return (
     <ShopScreen title="Welcome" subtitle="Our KultureX shopping app">
@@ -16,7 +44,7 @@ export function Categorie01Screen() {
           <Text style={styles.searchText}>Search...</Text>
         </View>
         <Pressable style={styles.iconBtn} onPress={() => navigation.navigate("Filters")}>
-          <Text style={styles.iconBtnText}>⎚</Text>
+          <Text style={styles.iconBtnText}>F</Text>
         </Pressable>
       </View>
 
@@ -26,7 +54,7 @@ export function Categorie01Screen() {
           <Text style={styles.bannerTitle}>20% Discount New Arrival Product</Text>
           <Text style={styles.bannerSubtitle}>Publish your style to make yourself more beautiful.</Text>
           <Pressable style={styles.bannerBtn} onPress={() => navigation.navigate("ProductDetails01")}>
-            <Text style={styles.bannerBtnText}>→</Text>
+            <Text style={styles.bannerBtnText}>Go</Text>
           </Pressable>
         </View>
       </View>
@@ -41,17 +69,24 @@ export function Categorie01Screen() {
 
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>Top Products</Text>
-        <Pressable onPress={() => navigation.navigate("Categorie02")}>
+        <Pressable onPress={() => navigation.navigate("Tabs", { screen: "Categorie02" })}>
           <Text style={styles.sectionLink}>View All</Text>
         </Pressable>
       </View>
 
       <View style={styles.grid}>
-        {demoProducts.slice(0, 4).map((product) => (
-          <View key={product.id} style={styles.gridItem}>
-            <ProductCard product={product} onPress={() => navigation.navigate("ProductDetails01")} />
+        {loadingProducts ? (
+          <View style={styles.loadingRow}>
+            <ActivityIndicator color={colors.accent} />
+            <Text style={styles.loadingText}>Loading products...</Text>
           </View>
-        ))}
+        ) : (
+          topProducts.map((product) => (
+            <View key={product.id} style={styles.gridItem}>
+              <ProductCard product={product} onPress={() => navigation.navigate("ProductDetails01", { product })} />
+            </View>
+          ))
+        )}
       </View>
     </ShopScreen>
   );
@@ -86,7 +121,7 @@ const styles = StyleSheet.create({
   },
   iconBtnText: {
     color: "#fff",
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: "700"
   },
   bannerCard: {
@@ -124,16 +159,16 @@ const styles = StyleSheet.create({
     position: "absolute",
     right: 12,
     bottom: 12,
-    width: 34,
-    height: 34,
-    borderRadius: 34,
+    width: 38,
+    height: 32,
+    borderRadius: 32,
     backgroundColor: colors.accent,
     alignItems: "center",
     justifyContent: "center"
   },
   bannerBtnText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: "800"
   },
   chipsRow: {
@@ -175,5 +210,16 @@ const styles = StyleSheet.create({
   },
   gridItem: {
     width: "48%"
+  },
+  loadingRow: {
+    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14
+  },
+  loadingText: {
+    color: colors.textMuted
   }
 });

@@ -33,12 +33,12 @@ const TOKEN_STORAGE_KEY = "kulturex_admin_access_token";
 
 type TabKey = "overview" | "products" | "events" | "authors" | "articles";
 
-const TAB_ITEMS: Array<{ key: TabKey; label: string }> = [
-  { key: "overview", label: "Overview" },
-  { key: "products", label: "Products" },
-  { key: "events", label: "Events" },
-  { key: "authors", label: "Authors" },
-  { key: "articles", label: "Articles" }
+const TAB_ITEMS: Array<{ key: TabKey; label: string; short: string }> = [
+  { key: "overview", label: "Get started", short: "GS" },
+  { key: "products", label: "Catalog", short: "PR" },
+  { key: "events", label: "Events", short: "EV" },
+  { key: "authors", label: "Authors", short: "AU" },
+  { key: "articles", label: "Articles", short: "AR" }
 ];
 
 const HELP_LINKS = [
@@ -48,6 +48,9 @@ const HELP_LINKS = [
   "How to review and publish articles?",
   "How to assign user roles safely?"
 ];
+
+const SIDEBAR_EXTRA_ITEMS = ["Internal monitoring", "Internal incidents", "Honeypot", "Honeytokens"];
+const FOOTER_ITEMS = ["Alerting integrations", "Teams", "Settings", "Help and support"];
 
 const initialBrandForm = {
   name: "",
@@ -436,14 +439,14 @@ export default function AdminPortal() {
             <div className={styles.avatar}>{displayName.slice(0, 1).toUpperCase()}</div>
             <div className={styles.userMeta}>
               <strong>{me?.username}</strong>
-              <span>Admin Portal</span>
+              <span>workspace</span>
             </div>
           </div>
 
-          <label className={styles.formRow}>
-            <span className={styles.label}>Quick search</span>
-            <input className={styles.input} placeholder="Search section..." readOnly />
-          </label>
+          <div className={styles.searchWrap}>
+            <input className={styles.input} placeholder="Quick search" readOnly />
+            <span className={styles.searchHint}>Ctrl+K</span>
+          </div>
 
           <nav className={styles.sideNav}>
             {TAB_ITEMS.map((tab) => (
@@ -453,12 +456,38 @@ export default function AdminPortal() {
                 onClick={() => setActiveTab(tab.key)}
                 type="button"
               >
+                <span className={styles.sideNavIcon}>{tab.short}</span>
                 {tab.label}
               </button>
             ))}
           </nav>
 
-          <div className={styles.sidebarCard}>
+          <div className={styles.sidebarGroup}>
+            <p className={styles.groupTitle}>Internal monitoring</p>
+            {SIDEBAR_EXTRA_ITEMS.map((item) => (
+              <p key={item} className={styles.groupItem}>
+                {item}
+              </p>
+            ))}
+          </div>
+
+          <div className={styles.trialCard}>
+            <p className={styles.trialTitle}>Get a 30-day free trial</p>
+            <p className={styles.tiny}>Try all business features to improve team operations.</p>
+            <button className={styles.btn} type="button">
+              Start trial
+            </button>
+          </div>
+
+          <div className={styles.sidebarGroup}>
+            {FOOTER_ITEMS.map((item) => (
+              <p key={item} className={styles.groupItem}>
+                {item}
+              </p>
+            ))}
+          </div>
+
+          <div className={styles.sidebarApi}>
             <p className={styles.tiny}>API base</p>
             <p className={styles.muted}>{apiBaseUrl}</p>
           </div>
@@ -468,13 +497,19 @@ export default function AdminPortal() {
           <div className={styles.container}>
             <header className={styles.header}>
               <div>
-                <span className={styles.heroPill}>Get started</span>
+                <div className={styles.breadcrumb}>
+                  <span className={styles.breadcrumbDot} />
+                  <span>Get started</span>
+                </div>
                 <h1 className={styles.title}>Let&apos;s get you set up, {displayName}</h1>
                 <p className={styles.muted}>
                   Central control panel for backend data powering your web and mobile apps.
                 </p>
               </div>
               <div className={styles.actions}>
+                <button className={styles.iconBtn} type="button" aria-label="Toggle layout">
+                  []
+                </button>
                 {me ? <span className={styles.badge}>Signed in: {me.username}</span> : null}
                 <button className={styles.btnSecondary} onClick={handleRefresh} disabled={loading || saving}>
                   Refresh
@@ -489,59 +524,95 @@ export default function AdminPortal() {
             {success ? <p className={styles.success}>{success}</p> : null}
             {loading ? <p className={styles.muted}>Loading admin data...</p> : null}
 
-        {activeTab === "overview" ? (
-          <section className={styles.card}>
-            <div className={styles.metrics}>
-              <article className={styles.metric}>
-                <div className={styles.metricLabel}>Users</div>
-                <div className={styles.metricValue}>{analytics?.users_total ?? 0}</div>
-              </article>
-              <article className={styles.metric}>
-                <div className={styles.metricLabel}>Articles</div>
-                <div className={styles.metricValue}>{analytics?.articles_total ?? 0}</div>
-              </article>
-              <article className={styles.metric}>
-                <div className={styles.metricLabel}>Products</div>
-                <div className={styles.metricValue}>{analytics?.products_total ?? 0}</div>
-              </article>
-              <article className={styles.metric}>
-                <div className={styles.metricLabel}>Events</div>
-                <div className={styles.metricValue}>{analytics?.events_total ?? 0}</div>
-              </article>
-              <article className={styles.metric}>
-                <div className={styles.metricLabel}>Orders</div>
-                <div className={styles.metricValue}>{analytics?.orders_total ?? 0}</div>
-              </article>
-              <article className={styles.metric}>
-                <div className={styles.metricLabel}>Ticket Bookings</div>
-                <div className={styles.metricValue}>{analytics?.ticket_bookings_total ?? 0}</div>
-              </article>
-            </div>
+            {activeTab === "overview" ? (
+              <section className={styles.overviewStack}>
+                <article className={styles.bannerCard}>
+                  <div className={styles.bannerLeft}>
+                    <span className={styles.bannerDot} />
+                    <p className={styles.bannerTitle}>Connect a source to monitor your platform data</p>
+                    <span className={styles.heroPill}>GitHub</span>
+                  </div>
+                  <button className={styles.btnSecondary} type="button">
+                    Connect more sources
+                  </button>
+                </article>
 
-            <div className={styles.list}>
-              <article className={styles.item}>
-                <h4>Article Workflow Snapshot</h4>
-                <p>
-                  Draft: {articleStatusSummary.draft || 0} | Submitted: {articleStatusSummary.submitted || 0} |
-                  Approved: {articleStatusSummary.approved || 0} | Published: {articleStatusSummary.published || 0}
-                </p>
-              </article>
+                <article className={styles.incidentCard}>
+                  <div className={styles.incidentHead}>
+                    <p className={styles.incidentTitle}>Discover your first incident</p>
+                    <span className={styles.heroPill}>Incidents detected</span>
+                  </div>
+                  <div className={styles.alertRow}>
+                    Incidents detected in your perimeter. Please remediate them as soon as possible.
+                  </div>
+                  <p className={styles.muted}>
+                    To start remediating incidents, go to the incidents page. If you&apos;re not sure what to do, review
+                    the remediation playbook.
+                  </p>
+                  <div className={styles.actions}>
+                    <button className={styles.btn} type="button" onClick={() => setActiveTab("articles")}>
+                      View incidents
+                    </button>
+                    <button className={styles.btnSecondary} type="button" onClick={() => setActiveTab("authors")}>
+                      Learn remediation
+                    </button>
+                  </div>
+                </article>
 
-              <article className={styles.item}>
-                <h4>Backend Shortcuts</h4>
-                <p>
-                  <a className={styles.badge} href={docsUrl} target="_blank" rel="noreferrer">
-                    API Docs
-                  </a>{" "}
-                  <a className={styles.badge} href={backendAdminUrl} target="_blank" rel="noreferrer">
-                    Django Admin
-                  </a>
-                </p>
-                <p className={styles.tiny}>Use this portal as the operating brain for web and mobile data.</p>
-              </article>
-            </div>
-          </section>
-        ) : null}
+                <article className={styles.metricsCard}>
+                  <p className={styles.incidentTitle}>Platform snapshot</p>
+                  <div className={styles.metrics}>
+                    <article className={styles.metric}>
+                      <div className={styles.metricLabel}>Users</div>
+                      <div className={styles.metricValue}>{analytics?.users_total ?? 0}</div>
+                    </article>
+                    <article className={styles.metric}>
+                      <div className={styles.metricLabel}>Articles</div>
+                      <div className={styles.metricValue}>{analytics?.articles_total ?? 0}</div>
+                    </article>
+                    <article className={styles.metric}>
+                      <div className={styles.metricLabel}>Products</div>
+                      <div className={styles.metricValue}>{analytics?.products_total ?? 0}</div>
+                    </article>
+                    <article className={styles.metric}>
+                      <div className={styles.metricLabel}>Events</div>
+                      <div className={styles.metricValue}>{analytics?.events_total ?? 0}</div>
+                    </article>
+                    <article className={styles.metric}>
+                      <div className={styles.metricLabel}>Orders</div>
+                      <div className={styles.metricValue}>{analytics?.orders_total ?? 0}</div>
+                    </article>
+                    <article className={styles.metric}>
+                      <div className={styles.metricLabel}>Ticket Bookings</div>
+                      <div className={styles.metricValue}>{analytics?.ticket_bookings_total ?? 0}</div>
+                    </article>
+                  </div>
+                </article>
+
+                <div className={styles.list}>
+                  <article className={styles.item}>
+                    <h4>Article workflow snapshot</h4>
+                    <p>
+                      Draft: {articleStatusSummary.draft || 0} | Submitted: {articleStatusSummary.submitted || 0} |
+                      Approved: {articleStatusSummary.approved || 0} | Published: {articleStatusSummary.published || 0}
+                    </p>
+                  </article>
+
+                  <article className={styles.item}>
+                    <h4>Backend shortcuts</h4>
+                    <p>
+                      <a className={styles.badge} href={docsUrl} target="_blank" rel="noreferrer">
+                        API Docs
+                      </a>{" "}
+                      <a className={styles.badge} href={backendAdminUrl} target="_blank" rel="noreferrer">
+                        Django Admin
+                      </a>
+                    </p>
+                    <p className={styles.tiny}>Use this portal as the operating brain for web and mobile data.</p>
+                  </article>
+                </div>
+              </section>
+            ) : null}
 
         {activeTab === "products" ? (
           <section className={`${styles.card} ${styles.panel}`}>

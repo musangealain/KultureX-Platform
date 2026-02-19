@@ -21,7 +21,7 @@ from apps.store.views import (
     ProductViewSet,
     ProductVariantViewSet,
 )
-from apps.users.views import MeView, UserViewSet
+from apps.users.views import MeView, TwoFactorChallengeView, TwoFactorVerifyView, UserViewSet
 
 router = DefaultRouter()
 router.register("users", UserViewSet, basename="users")
@@ -55,6 +55,8 @@ urlpatterns = [
     path("api/v1/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
     path("api/v1/auth/token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
     path("api/v1/auth/me/", MeView.as_view(), name="me"),
+    path("api/v1/auth/2fa/challenge/", TwoFactorChallengeView.as_view(), name="two_factor_challenge"),
+    path("api/v1/auth/2fa/verify/", TwoFactorVerifyView.as_view(), name="two_factor_verify"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]

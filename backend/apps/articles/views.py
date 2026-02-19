@@ -4,6 +4,7 @@ from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from apps.common.audit import log_admin_action
 from apps.articles.models import Article, ArticleStatus, Category, Tag
 from apps.articles.permissions import CanManageArticle
 from apps.articles.serializers import (
@@ -23,7 +24,9 @@ class CategoryViewSet(viewsets.ModelViewSet):
         if self.request.method in permissions.SAFE_METHODS:
             return [permissions.AllowAny()]
         if self.request.user and self.request.user.is_authenticated and self.request.user.role in {
+            UserRole.SUPER_ADMIN,
             UserRole.ADMIN,
+            UserRole.MODERATOR,
             UserRole.EDITOR,
         }:
             return [permissions.IsAuthenticated()]
@@ -39,7 +42,9 @@ class TagViewSet(viewsets.ModelViewSet):
         if self.request.method in permissions.SAFE_METHODS:
             return [permissions.AllowAny()]
         if self.request.user and self.request.user.is_authenticated and self.request.user.role in {
+            UserRole.SUPER_ADMIN,
             UserRole.ADMIN,
+            UserRole.MODERATOR,
             UserRole.EDITOR,
         }:
             return [permissions.IsAuthenticated()]
@@ -59,7 +64,12 @@ class ArticleViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.filter(status=ArticleStatus.PUBLISHED)
-        if user.role in {UserRole.EDITOR, UserRole.ADMIN}:
+        if user.role in {
+            UserRole.SUPER_ADMIN,
+            UserRole.ADMIN,
+            UserRole.MODERATOR,
+            UserRole.EDITOR,
+        }:
             return queryset
         return queryset.filter(Q(status=ArticleStatus.PUBLISHED) | Q(author=user))
 
@@ -72,12 +82,42 @@ class ArticleViewSet(viewsets.ModelViewSet):
                 default_status = requested_status
             else:
                 default_status = ArticleStatus.SUBMITTED
-        serializer.save(author=user, status=default_status)
+        article = serializer.save(author=user, status=default_status)
+        log_admin_action(
+            self.request,
+            "articles.create",
+            target=article,
+            metadata={"status": article.status},
+        )
+
+    def perform_update(self, serializer):
+        changed_fields = list(serializer.validated_data.keys())
+        article = serializer.save()
+        log_admin_action(
+            self.request,
+            "articles.update",
+            target=article,
+            metadata={"changed_fields": changed_fields, "status": article.status},
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request,
+            "articles.delete",
+            target=instance,
+            metadata={"status": instance.status},
+        )
+        super().perform_destroy(instance)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def submit(self, request, pk=None):
         article = self.get_object()
-        if article.author_id != request.user.id and request.user.role not in {UserRole.ADMIN, UserRole.EDITOR}:
+        if article.author_id != request.user.id and request.user.role not in {
+            UserRole.SUPER_ADMIN,
+            UserRole.ADMIN,
+            UserRole.MODERATOR,
+            UserRole.EDITOR,
+        }:
             return Response({"detail": "Only the author can submit this article."}, status=status.HTTP_403_FORBIDDEN)
         if article.status not in {ArticleStatus.DRAFT, ArticleStatus.REJECTED}:
             return Response({"detail": "Only draft or rejected articles can be submitted."}, status=status.HTTP_400_BAD_REQUEST)
@@ -86,11 +126,17 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article.review_notes = ""
         article.reviewed_by = None
         article.save(update_fields=["status", "review_notes", "reviewed_by", "updated_at"])
+        log_admin_action(request, "articles.submit", target=article, metadata={"status": article.status})
         return Response(self.get_serializer(article).data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def approve(self, request, pk=None):
-        if request.user.role not in {UserRole.EDITOR, UserRole.ADMIN}:
+        if request.user.role not in {
+            UserRole.SUPER_ADMIN,
+            UserRole.ADMIN,
+            UserRole.MODERATOR,
+            UserRole.EDITOR,
+        }:
             return Response({"detail": "Editor or Admin role required."}, status=status.HTTP_403_FORBIDDEN)
 
         article = self.get_object()
@@ -101,11 +147,17 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article.reviewed_by = request.user
         article.review_notes = request.data.get("review_notes", "")
         article.save(update_fields=["status", "reviewed_by", "review_notes", "updated_at"])
+        log_admin_action(request, "articles.approve", target=article, metadata={"status": article.status})
         return Response(self.get_serializer(article).data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def reject(self, request, pk=None):
-        if request.user.role not in {UserRole.EDITOR, UserRole.ADMIN}:
+        if request.user.role not in {
+            UserRole.SUPER_ADMIN,
+            UserRole.ADMIN,
+            UserRole.MODERATOR,
+            UserRole.EDITOR,
+        }:
             return Response({"detail": "Editor or Admin role required."}, status=status.HTTP_403_FORBIDDEN)
 
         article = self.get_object()
@@ -116,11 +168,16 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article.reviewed_by = request.user
         article.review_notes = request.data.get("review_notes", "")
         article.save(update_fields=["status", "reviewed_by", "review_notes", "updated_at"])
+        log_admin_action(request, "articles.reject", target=article, metadata={"status": article.status})
         return Response(self.get_serializer(article).data)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def publish(self, request, pk=None):
-        if request.user.role not in {UserRole.EDITOR, UserRole.ADMIN}:
+        if request.user.role not in {
+            UserRole.SUPER_ADMIN,
+            UserRole.ADMIN,
+            UserRole.EDITOR,
+        }:
             return Response({"detail": "Editor or Admin role required."}, status=status.HTTP_403_FORBIDDEN)
 
         article = self.get_object()
@@ -131,4 +188,5 @@ class ArticleViewSet(viewsets.ModelViewSet):
         article.reviewed_by = request.user
         article.published_at = timezone.now()
         article.save(update_fields=["status", "reviewed_by", "published_at", "updated_at"])
+        log_admin_action(request, "articles.publish", target=article, metadata={"status": article.status})
         return Response(self.get_serializer(article).data)

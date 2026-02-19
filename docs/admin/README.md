@@ -17,6 +17,7 @@ This package defines the enterprise-level Admin Portal design for KultureX as a 
 4. `docs/admin/web-admin-wireframe.md`
 5. `docs/admin/mobile-admin-mockup.md`
 6. `docs/admin/codex-build-prompt.md`
+7. `docs/admin/phased-implementation-checklist.md`
 
 ## Scope Notes
 

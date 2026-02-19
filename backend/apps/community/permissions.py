@@ -12,7 +12,7 @@ class CanManageCreatorProfile(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
         if request.method in SAFE_METHODS:
             return True
-        if request.user.role == UserRole.ADMIN:
+        if request.user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}:
             return True
         return obj.user == request.user
 
@@ -22,6 +22,6 @@ class CanManageFollow(BasePermission):
         return bool(request.user and request.user.is_authenticated)
 
     def has_object_permission(self, request, view, obj) -> bool:
-        if request.user.role == UserRole.ADMIN:
+        if request.user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}:
             return True
         return obj.follower == request.user

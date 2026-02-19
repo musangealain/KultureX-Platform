@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
+from apps.common.audit import log_admin_action
 from apps.store.models import (
     Brand,
     Cart,
@@ -33,7 +34,16 @@ class BrandViewSet(viewsets.ModelViewSet):
     permission_classes = [CanManageBrandContent]
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        brand = serializer.save(owner=self.request.user)
+        log_admin_action(self.request, "store.brands.create", target=brand)
+
+    def perform_update(self, serializer):
+        brand = serializer.save()
+        log_admin_action(self.request, "store.brands.update", target=brand, metadata={"name": brand.name})
+
+    def perform_destroy(self, instance):
+        log_admin_action(self.request, "store.brands.delete", target=instance, metadata={"name": instance.name})
+        super().perform_destroy(instance)
 
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -43,9 +53,18 @@ class ProductViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         brand = serializer.validated_data["brand"]
-        if self.request.user.role != UserRole.ADMIN and brand.owner_id != self.request.user.id:
+        if self.request.user.role not in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR} and brand.owner_id != self.request.user.id:
             raise PermissionDenied("Only brand owners can add products.")
-        serializer.save()
+        product = serializer.save()
+        log_admin_action(self.request, "store.products.create", target=product, metadata={"brand_id": brand.id})
+
+    def perform_update(self, serializer):
+        product = serializer.save()
+        log_admin_action(self.request, "store.products.update", target=product, metadata={"brand_id": product.brand_id})
+
+    def perform_destroy(self, instance):
+        log_admin_action(self.request, "store.products.delete", target=instance, metadata={"brand_id": instance.brand_id})
+        super().perform_destroy(instance)
 
 
 class ProductVariantViewSet(viewsets.ModelViewSet):
@@ -55,9 +74,33 @@ class ProductVariantViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         product = serializer.validated_data["product"]
-        if self.request.user.role != UserRole.ADMIN and product.brand.owner_id != self.request.user.id:
+        if self.request.user.role not in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR} and product.brand.owner_id != self.request.user.id:
             raise PermissionDenied("Only brand owners can add variants.")
-        serializer.save()
+        variant = serializer.save()
+        log_admin_action(
+            self.request,
+            "store.variants.create",
+            target=variant,
+            metadata={"product_id": product.id},
+        )
+
+    def perform_update(self, serializer):
+        variant = serializer.save()
+        log_admin_action(
+            self.request,
+            "store.variants.update",
+            target=variant,
+            metadata={"product_id": variant.product_id},
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request,
+            "store.variants.delete",
+            target=instance,
+            metadata={"product_id": instance.product_id},
+        )
+        super().perform_destroy(instance)
 
 
 class CartViewSet(viewsets.ModelViewSet):
@@ -70,7 +113,7 @@ class CartViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
-        if user.role == UserRole.ADMIN:
+        if user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN}:
             return queryset
         return queryset.filter(user=user)
 
@@ -81,12 +124,14 @@ class CartViewSet(viewsets.ModelViewSet):
         cart, created = Cart.objects.get_or_create(user=request.user, checked_out=False)
         serializer = self.get_serializer(cart)
         status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
+        if created:
+            log_admin_action(request, "store.carts.create", target=cart)
         return Response(serializer.data, status=status_code)
 
     @action(detail=True, methods=["post"], permission_classes=[permissions.IsAuthenticated])
     def checkout(self, request, pk=None):
         cart = self.get_object()
-        if cart.user_id != request.user.id and request.user.role != UserRole.ADMIN:
+        if cart.user_id != request.user.id and request.user.role not in {UserRole.SUPER_ADMIN, UserRole.ADMIN}:
             return Response({"detail": "Only cart owner can checkout."}, status=status.HTTP_403_FORBIDDEN)
         if cart.checked_out:
             return Response({"detail": "Cart already checked out."}, status=status.HTTP_400_BAD_REQUEST)
@@ -102,6 +147,12 @@ class CartViewSet(viewsets.ModelViewSet):
         order.recalculate_total()
         cart.checked_out = True
         cart.save(update_fields=["checked_out", "updated_at"])
+        log_admin_action(
+            request,
+            "store.carts.checkout",
+            target=cart,
+            metadata={"order_id": order.id, "order_total": str(order.total_amount)},
+        )
         return Response(OrderSerializer(order).data, status=status.HTTP_201_CREATED)
 
 
@@ -115,19 +166,43 @@ class CartItemViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
-        if user.role == UserRole.ADMIN:
+        if user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN}:
             return queryset
         return queryset.filter(cart__user=user, cart__checked_out=False)
 
     def perform_create(self, serializer):
         cart, _ = Cart.objects.get_or_create(user=self.request.user, checked_out=False)
-        serializer.save(cart=cart)
+        cart_item = serializer.save(cart=cart)
+        log_admin_action(
+            self.request,
+            "store.cart_items.create",
+            target=cart_item,
+            metadata={"cart_id": cart.id, "product_id": cart_item.product_id},
+        )
 
     def get_object(self):
         obj = super().get_object()
-        if self.request.user.role != UserRole.ADMIN and obj.cart.user_id != self.request.user.id:
+        if self.request.user.role not in {UserRole.SUPER_ADMIN, UserRole.ADMIN} and obj.cart.user_id != self.request.user.id:
             raise PermissionDenied("You can only manage your cart items.")
         return obj
+
+    def perform_update(self, serializer):
+        cart_item = serializer.save()
+        log_admin_action(
+            self.request,
+            "store.cart_items.update",
+            target=cart_item,
+            metadata={"cart_id": cart_item.cart_id, "quantity": cart_item.quantity},
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request,
+            "store.cart_items.delete",
+            target=instance,
+            metadata={"cart_id": instance.cart_id, "product_id": instance.product_id},
+        )
+        super().perform_destroy(instance)
 
 
 class OrderViewSet(viewsets.ModelViewSet):
@@ -140,7 +215,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
-        if user.role == UserRole.ADMIN:
+        if user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN}:
             return queryset
         return queryset.filter(user=user)
 
@@ -150,7 +225,31 @@ class OrderViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        order = serializer.save(user=self.request.user)
+        log_admin_action(
+            self.request,
+            "store.orders.create",
+            target=order,
+            metadata={"status": order.status},
+        )
+
+    def perform_update(self, serializer):
+        order = serializer.save()
+        log_admin_action(
+            self.request,
+            "store.orders.update",
+            target=order,
+            metadata={"status": order.status},
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request,
+            "store.orders.delete",
+            target=instance,
+            metadata={"status": instance.status},
+        )
+        super().perform_destroy(instance)
 
 
 class OrderItemViewSet(viewsets.ModelViewSet):
@@ -161,23 +260,41 @@ class OrderItemViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        if user.role == UserRole.ADMIN:
+        if user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN}:
             return queryset
         return queryset.filter(order__user=user)
 
     def perform_create(self, serializer):
         order = serializer.validated_data["order"]
-        if self.request.user.role != UserRole.ADMIN and order.user_id != self.request.user.id:
+        if self.request.user.role not in {UserRole.SUPER_ADMIN, UserRole.ADMIN} and order.user_id != self.request.user.id:
             raise PermissionDenied("You can only add items to your orders.")
-        serializer.save()
+        order_item = serializer.save()
         order.recalculate_total()
+        log_admin_action(
+            self.request,
+            "store.order_items.create",
+            target=order_item,
+            metadata={"order_id": order.id, "quantity": order_item.quantity},
+        )
 
     def perform_update(self, serializer):
         item = serializer.save()
         item.order.recalculate_total()
+        log_admin_action(
+            self.request,
+            "store.order_items.update",
+            target=item,
+            metadata={"order_id": item.order_id, "quantity": item.quantity},
+        )
 
     def perform_destroy(self, instance):
         order = instance.order
+        log_admin_action(
+            self.request,
+            "store.order_items.delete",
+            target=instance,
+            metadata={"order_id": instance.order_id, "product_id": instance.product_id},
+        )
         super().perform_destroy(instance)
         order.recalculate_total()
 
@@ -190,12 +307,36 @@ class PaymentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
-        if user.role == UserRole.ADMIN:
+        if user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN}:
             return queryset
         return queryset.filter(order__user=user)
 
     def perform_create(self, serializer):
         order = serializer.validated_data["order"]
-        if self.request.user.role != UserRole.ADMIN and order.user_id != self.request.user.id:
+        if self.request.user.role not in {UserRole.SUPER_ADMIN, UserRole.ADMIN} and order.user_id != self.request.user.id:
             raise PermissionDenied("You can only pay for your own orders.")
-        serializer.save(amount=order.total_amount)
+        payment = serializer.save(amount=order.total_amount)
+        log_admin_action(
+            self.request,
+            "store.payments.create",
+            target=payment,
+            metadata={"order_id": order.id, "amount": str(payment.amount)},
+        )
+
+    def perform_update(self, serializer):
+        payment = serializer.save()
+        log_admin_action(
+            self.request,
+            "store.payments.update",
+            target=payment,
+            metadata={"order_id": payment.order_id, "status": payment.status},
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request,
+            "store.payments.delete",
+            target=instance,
+            metadata={"order_id": instance.order_id, "status": instance.status},
+        )
+        super().perform_destroy(instance)

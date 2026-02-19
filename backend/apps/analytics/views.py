@@ -8,7 +8,7 @@ from rest_framework.views import APIView
 from apps.articles.models import Article
 from apps.events.models import Event, TicketBooking
 from apps.store.models import Order, Product
-from apps.users.models import UserRole
+from apps.users.permissions import IsModeratorOrAdmin
 
 User = get_user_model()
 
@@ -27,13 +27,10 @@ class DetailErrorSerializer(serializers.Serializer):
 
 
 class AdminAnalyticsView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsModeratorOrAdmin]
 
     @extend_schema(responses={200: AdminAnalyticsSerializer, 403: DetailErrorSerializer})
     def get(self, request):
-        if request.user.role != UserRole.ADMIN:
-            return Response({"detail": "Admin access required."}, status=403)
-
         payload = {
             "users_total": User.objects.count(),
             "articles_total": Article.objects.count(),

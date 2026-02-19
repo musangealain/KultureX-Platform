@@ -10,7 +10,9 @@ class CanManageArticle(BasePermission):
         if not request.user or not request.user.is_authenticated:
             return False
         return request.user.role in {
+            UserRole.SUPER_ADMIN,
             UserRole.ADMIN,
+            UserRole.MODERATOR,
             UserRole.EDITOR,
             UserRole.AUTHOR,
         }
@@ -18,6 +20,11 @@ class CanManageArticle(BasePermission):
     def has_object_permission(self, request, view, obj) -> bool:
         if request.method in SAFE_METHODS:
             return True
-        if request.user.role in {UserRole.ADMIN, UserRole.EDITOR}:
+        if request.user.role in {
+            UserRole.SUPER_ADMIN,
+            UserRole.ADMIN,
+            UserRole.MODERATOR,
+            UserRole.EDITOR,
+        }:
             return True
         return obj.author_id == request.user.id

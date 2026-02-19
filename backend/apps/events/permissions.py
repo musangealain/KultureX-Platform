@@ -10,13 +10,13 @@ class CanManageEvent(BasePermission):
         return bool(
             request.user
             and request.user.is_authenticated
-            and request.user.role == UserRole.ADMIN
+            and request.user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}
         )
 
     def has_object_permission(self, request, view, obj) -> bool:
         if request.method in SAFE_METHODS:
             return True
-        if request.user.role == UserRole.ADMIN:
+        if request.user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}:
             return True
 
         if hasattr(obj, "organizer"):
@@ -31,7 +31,7 @@ class CanManageRSVP(BasePermission):
         return bool(request.user and request.user.is_authenticated)
 
     def has_object_permission(self, request, view, obj) -> bool:
-        if request.user.role == UserRole.ADMIN:
+        if request.user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}:
             return True
         return obj.user == request.user
 
@@ -41,6 +41,6 @@ class CanManageTicketBooking(BasePermission):
         return bool(request.user and request.user.is_authenticated)
 
     def has_object_permission(self, request, view, obj) -> bool:
-        if request.user.role == UserRole.ADMIN:
+        if request.user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}:
             return True
         return obj.user_id == request.user.id

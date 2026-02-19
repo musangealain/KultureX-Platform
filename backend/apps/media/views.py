@@ -15,7 +15,7 @@ class MediaAssetViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user.is_authenticated:
             return queryset.none()
-        if user.role == UserRole.ADMIN:
+        if user.role in {UserRole.SUPER_ADMIN, UserRole.ADMIN, UserRole.MODERATOR}:
             return queryset
         return queryset.filter(uploaded_by=user)
 

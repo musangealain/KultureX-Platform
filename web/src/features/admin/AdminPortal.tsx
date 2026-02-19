@@ -1,112 +1,75 @@
-"use client";
-/* eslint-disable @next/next/no-img-element */
+﻿"use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import styles from "./AdminPortal.module.css";
 import {
-  approveArticle,
-  createBrand,
-  createEvent,
-  createProduct,
-  getAnalytics,
   getMe,
-  listArticles,
-  listBrands,
-  listEvents,
-  listProducts,
-  listUsers,
   loginAdmin,
-  publishArticle,
-  rejectArticle,
-  updateUserRole,
-  type AdminAnalytics,
-  type AdminUser,
-  type Article,
-  type Brand,
-  type EventItem,
-  type Product,
-  type UserRole
+  requestTwoFactorChallenge,
+  verifyTwoFactorCode,
+  type AdminUser
 } from "./api";
 
 const TOKEN_STORAGE_KEY = "kulturex_admin_access_token";
 
-type TabKey = "overview" | "products" | "events" | "authors" | "articles";
-
-const TAB_ITEMS: Array<{ key: TabKey; label: string; short: string }> = [
-  { key: "overview", label: "Get started", short: "GS" },
-  { key: "products", label: "Catalog", short: "PR" },
-  { key: "events", label: "Events", short: "EV" },
-  { key: "authors", label: "Authors", short: "AU" },
-  { key: "articles", label: "Articles", short: "AR" }
+const SIDEBAR_SECTIONS = [
+  {
+    title: "EXECUTIVE OVERVIEW",
+    items: ["Institutional Dashboard", "Strategic KPIs", "Institutional Health", "Strategic Initiatives", "Leadership"]
+  },
+  {
+    title: "PEOPLE ANALYTICS",
+    items: ["Office Performance", "Student Performance", "Faculty Performance"]
+  },
+  {
+    title: "ACADEMIC ANALYTICS",
+    items: ["Academic Workspace", "Program Performance", "Course Analytics", "Learning Outcomes"]
+  },
+  {
+    title: "FINANCIAL ANALYTICS",
+    items: ["Revenue Intelligence", "Budget Health", "Collection Operations"]
+  }
 ];
 
-const HELP_LINKS = [
-  "How to set up your workspace?",
-  "How to manage products and inventory?",
-  "How to schedule and publish events?",
-  "How to review and publish articles?",
-  "How to assign user roles safely?"
+const QUICK_STATS = [
+  { label: "TOTAL STUDENTS", value: "0", delta: "+8% YOY", tone: "up" },
+  { label: "TOTAL STAFF", value: "6", delta: "+5% YOY", tone: "up" },
+  { label: "RETENTION RATE", value: "88%", delta: "-2% YOY", tone: "down" },
+  { label: "GRADUATION RATE", value: "82%", delta: "+3% YOY", tone: "up" },
+  { label: "EMPLOYMENT RATE", value: "91%", delta: "+2% YOY", tone: "up" }
 ];
 
-const SIDEBAR_EXTRA_ITEMS = ["Internal monitoring", "Internal incidents", "Honeypot", "Honeytokens"];
-const FOOTER_ITEMS = ["Alerting integrations", "Teams", "Settings", "Help and support"];
+const OFFICE_PERFORMANCE = [
+  { name: "Registrar (ARG)", score: "85%", trend: "+2%", tone: "up" },
+  { name: "Finance (FIN)", score: "92%", trend: "+1%", tone: "up" },
+  { name: "HR (HRM)", score: "75%", trend: "+5%", tone: "neutral" },
+  { name: "Academic (ACA)", score: "95%", trend: "+3%", tone: "up" },
+  { name: "Admissions (ADM)", score: "70%", trend: "-8%", tone: "down" }
+];
 
-const initialBrandForm = {
-  name: "",
-  description: "",
-  logo_url: ""
-};
+const FINANCIAL_HEALTH = [
+  { metric: "Revenue YTD", value: "$4.2M", trend: "+12%" },
+  { metric: "Expenses YTD", value: "$3.1M", trend: "+8%" },
+  { metric: "Net Surplus", value: "$1.1M", trend: "+18%" },
+  { metric: "Collection Rate", value: "92%", trend: "+3%" },
+  { metric: "Budget Variance", value: "-2.5%", trend: "-" }
+];
 
-const initialProductForm = {
-  brand: "",
-  name: "",
-  description: "",
-  price: "",
-  image_url: "",
-  is_active: true
-};
+const RECENT_ACTIVITY = [
+  { time: "10:30 AM", text: "Registrar Office issued 45 transcripts" },
+  { time: "09:15 AM", text: "Finance Office processed payroll (6 staff)" },
+  { time: "08:00 AM", text: "Admissions Office sent 23 offer letters" },
+  { time: "Yesterday", text: "IT Department resolved 15 support tickets" }
+];
 
-const initialEventForm = {
-  title: "",
-  description: "",
-  venue: "",
-  city: "",
-  start_at: "",
-  end_at: "",
-  capacity: "50",
-  cover_image_url: "",
-  is_published: true
-};
-
-function formatDate(iso: string | null): string {
-  if (!iso) {
-    return "Not published";
-  }
-  const value = new Date(iso);
-  if (Number.isNaN(value.getTime())) {
-    return iso;
-  }
-  return value.toLocaleString();
-}
-
-function deriveBaseUrl(pathSuffix: string): string {
-  const apiBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
-  return apiBase.replace(/\/api\/v1\/?$/, pathSuffix);
+function cx(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(" ");
 }
 
 export default function AdminPortal() {
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<AdminUser | null>(null);
-  const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [events, setEvents] = useState<EventItem[]>([]);
-  const [articles, setArticles] = useState<Article[]>([]);
-  const [roleDrafts, setRoleDrafts] = useState<Record<number, UserRole>>({});
-
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -114,65 +77,52 @@ export default function AdminPortal() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [brandForm, setBrandForm] = useState(initialBrandForm);
-  const [productForm, setProductForm] = useState(initialProductForm);
-  const [eventForm, setEventForm] = useState(initialEventForm);
+  const [code, setCode] = useState("");
+  const [challengeId, setChallengeId] = useState("");
+  const [challengeHint, setChallengeHint] = useState("");
+  const [twoFactorVerified, setTwoFactorVerified] = useState(false);
+  const [activeMenuItem, setActiveMenuItem] = useState("Institutional Dashboard");
 
-  const docsUrl = useMemo(() => deriveBaseUrl("/api/docs/"), []);
-  const backendAdminUrl = useMemo(() => deriveBaseUrl("/admin/"), []);
-  const apiBaseUrl = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1", []);
-
-  const clearAlerts = useCallback(() => {
+  const clearNotice = useCallback(() => {
     setError("");
     setSuccess("");
   }, []);
 
-  const loadPortalData = useCallback(async (accessToken: string) => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const [mePayload, analyticsPayload, usersPayload, brandsPayload, productsPayload, eventsPayload, articlesPayload] =
-        await Promise.all([
-          getMe(accessToken),
-          getAnalytics(accessToken),
-          listUsers(accessToken),
-          listBrands(accessToken),
-          listProducts(accessToken),
-          listEvents(accessToken),
-          listArticles(accessToken)
-        ]);
-
-      if (mePayload.role !== "admin") {
-        throw new Error("Admin role required for this portal.");
-      }
-
-      setMe(mePayload);
-      setAnalytics(analyticsPayload);
-      setUsers(usersPayload);
-      setBrands(brandsPayload);
-      setProducts(productsPayload);
-      setEvents(eventsPayload);
-      setArticles(articlesPayload);
-      setRoleDrafts(
-        usersPayload.reduce<Record<number, UserRole>>((acc, user) => {
-          acc[user.id] = user.role;
-          return acc;
-        }, {})
-      );
-    } catch (loadError) {
-      setToken(null);
-      localStorage.removeItem(TOKEN_STORAGE_KEY);
-      setError(loadError instanceof Error ? loadError.message : "Failed to load admin portal.");
-    } finally {
-      setLoading(false);
-    }
+  const startTwoFactorFlow = useCallback(async (accessToken: string) => {
+    const challenge = await requestTwoFactorChallenge(accessToken, "app");
+    setChallengeId(challenge.challenge_id);
+    setCode("");
+    setChallengeHint(challenge.code ? `Dev code: ${challenge.code}` : "Check your authenticator app for the code.");
   }, []);
 
+  const bootstrapSession = useCallback(
+    async (accessToken: string) => {
+      setLoading(true);
+      clearNotice();
+      try {
+        const mePayload = await getMe(accessToken);
+        if (!mePayload.permissions.can_access_admin_portal) {
+          throw new Error("Your account does not have admin portal access.");
+        }
+        setMe(mePayload);
+        await startTwoFactorFlow(accessToken);
+        setSuccess("Credentials accepted. Complete 2FA verification.");
+      } catch (bootstrapError) {
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        setToken(null);
+        setMe(null);
+        setError(bootstrapError instanceof Error ? bootstrapError.message : "Failed to initialize admin portal.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [clearNotice, startTwoFactorFlow]
+  );
+
   useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_STORAGE_KEY);
-    if (stored) {
-      setToken(stored);
+    const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+    if (storedToken) {
+      setToken(storedToken);
     }
   }, []);
 
@@ -180,22 +130,38 @@ export default function AdminPortal() {
     if (!token) {
       return;
     }
-    loadPortalData(token).catch(() => null);
-  }, [token, loadPortalData]);
+    bootstrapSession(token).catch(() => null);
+  }, [token, bootstrapSession]);
 
-  async function handleLoginSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    clearNotice();
     setSaving(true);
-    clearAlerts();
-
     try {
       const tokens = await loginAdmin(username, password);
       localStorage.setItem(TOKEN_STORAGE_KEY, tokens.access);
       setToken(tokens.access);
-      setSuccess("Admin session started.");
       setPassword("");
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Login failed.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleVerifyTwoFactor(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!token) {
+      return;
+    }
+    clearNotice();
+    setSaving(true);
+    try {
+      await verifyTwoFactorCode(token, challengeId, code);
+      setTwoFactorVerified(true);
+      setSuccess("2FA verified successfully.");
+    } catch (verifyError) {
+      setError(verifyError instanceof Error ? verifyError.message : "Invalid code.");
     } finally {
       setSaving(false);
     }
@@ -205,770 +171,277 @@ export default function AdminPortal() {
     localStorage.removeItem(TOKEN_STORAGE_KEY);
     setToken(null);
     setMe(null);
-    setAnalytics(null);
-    setUsers([]);
-    setBrands([]);
-    setProducts([]);
-    setEvents([]);
-    setArticles([]);
+    setTwoFactorVerified(false);
     setError("");
     setSuccess("");
   }
 
-  async function handleRefresh() {
-    if (!token) {
-      return;
-    }
-    clearAlerts();
-    await loadPortalData(token);
-    setSuccess("Portal data refreshed.");
-  }
-
-  async function handleCreateBrand(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) {
-      return;
-    }
-
-    setSaving(true);
-    clearAlerts();
-
-    try {
-      const created = await createBrand(token, brandForm);
-      setBrands((current) => [created, ...current]);
-      setBrandForm(initialBrandForm);
-      setProductForm((current) => ({
-        ...current,
-        brand: current.brand || String(created.id)
-      }));
-      setSuccess(`Brand "${created.name}" created.`);
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Failed to create brand.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleCreateProduct(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) {
-      return;
-    }
-
-    setSaving(true);
-    clearAlerts();
-
-    try {
-      const created = await createProduct(token, {
-        brand: Number(productForm.brand),
-        name: productForm.name,
-        description: productForm.description,
-        price: productForm.price,
-        image_url: productForm.image_url,
-        is_active: productForm.is_active
-      });
-      setProducts((current) => [created, ...current]);
-      setProductForm(initialProductForm);
-      setSuccess(`Product "${created.name}" created.`);
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Failed to create product.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleCreateEvent(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!token) {
-      return;
-    }
-
-    setSaving(true);
-    clearAlerts();
-
-    try {
-      const created = await createEvent(token, {
-        title: eventForm.title,
-        description: eventForm.description,
-        venue: eventForm.venue,
-        city: eventForm.city,
-        start_at: new Date(eventForm.start_at).toISOString(),
-        end_at: new Date(eventForm.end_at).toISOString(),
-        capacity: Number(eventForm.capacity),
-        cover_image_url: eventForm.cover_image_url,
-        is_published: eventForm.is_published
-      });
-      setEvents((current) => [created, ...current]);
-      setEventForm(initialEventForm);
-      setSuccess(`Event "${created.title}" created.`);
-    } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Failed to create event.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleRoleSave(userId: number) {
-    if (!token) {
-      return;
-    }
-    const nextRole = roleDrafts[userId];
-    if (!nextRole) {
-      return;
-    }
-
-    setSaving(true);
-    clearAlerts();
-
-    try {
-      const updated = await updateUserRole(token, userId, nextRole);
-      setUsers((current) => current.map((item) => (item.id === userId ? updated : item)));
-      setSuccess(`Updated role for ${updated.username}.`);
-    } catch (updateError) {
-      setError(updateError instanceof Error ? updateError.message : "Failed to update role.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function handleArticleAction(id: number, action: "approve" | "reject" | "publish") {
-    if (!token) {
-      return;
-    }
-
-    setSaving(true);
-    clearAlerts();
-
-    try {
-      let updated: Article;
-      if (action === "approve") {
-        updated = await approveArticle(token, id);
-      } else if (action === "reject") {
-        updated = await rejectArticle(token, id, "Not aligned with current editorial quality.");
-      } else {
-        updated = await publishArticle(token, id);
-      }
-      setArticles((current) => current.map((item) => (item.id === id ? updated : item)));
-      setSuccess(`Article "${updated.title}" updated to ${updated.status}.`);
-    } catch (actionError) {
-      setError(actionError instanceof Error ? actionError.message : "Failed to update article.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  const articleStatusSummary = useMemo(() => {
-    return articles.reduce<Record<string, number>>((acc, item) => {
-      acc[item.status] = (acc[item.status] || 0) + 1;
-      return acc;
-    }, {});
-  }, [articles]);
-
-  const displayName = useMemo(() => {
+  const greeting = useMemo(() => {
     if (!me) {
-      return "Administrator";
+      return "OIT26-001";
     }
-    const fullName = `${me.first_name || ""} ${me.last_name || ""}`.trim();
-    return fullName || me.username;
+    return me.username || "OIT26-001";
   }, [me]);
 
   if (!token) {
     return (
-      <main className={styles.portal}>
-        <div className={styles.loginShell}>
-          <section className={styles.loginHero}>
-            <span className={styles.heroPill}>KultureX Control Center</span>
-            <h1 className={styles.heroTitle}>Operate web + mobile from one admin brain.</h1>
-            <p className={styles.heroCopy}>
-              Manage products, events, creators, and publishing workflows in one place with the same design language as
-              your storefront.
-            </p>
-            <ul className={styles.heroList}>
-              <li>Catalog and inventory operations</li>
-              <li>Event publishing and bookings</li>
-              <li>Author and editor role governance</li>
-              <li>Editorial review and publishing</li>
-            </ul>
-          </section>
+      <main className={styles.authPage}>
+        <section className={styles.authCard}>
+          <h1>KultureX Admin Portal</h1>
+          <p>Sign in to open the dashboard workspace.</p>
+          <form className={styles.authForm} onSubmit={handleLogin}>
+            <label className={styles.field}>
+              <span>Username</span>
+              <input value={username} onChange={(event) => setUsername(event.target.value)} required />
+            </label>
+            <label className={styles.field}>
+              <span>Password</span>
+              <input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+            </label>
+            <button type="submit" className={styles.actionPrimary} disabled={saving}>
+              {saving ? "Signing in..." : "Sign In"}
+            </button>
+          </form>
+          {error ? <p className={styles.noticeError}>{error}</p> : null}
+        </section>
+      </main>
+    );
+  }
 
-          <section className={styles.loginCard}>
-            <h1 className={styles.title}>Admin login</h1>
-            <p className={styles.muted}>Sign in with your superuser credentials.</p>
+  if (loading && !me) {
+    return (
+      <main className={styles.authPage}>
+        <section className={styles.authCard}>
+          <h1>Loading admin session...</h1>
+        </section>
+      </main>
+    );
+  }
 
-            <form className={styles.formGrid} onSubmit={handleLoginSubmit}>
-              <label className={styles.formRow}>
-                <span className={styles.label}>Username</span>
-                <input
-                  className={styles.input}
-                  value={username}
-                  onChange={(event) => setUsername(event.target.value)}
-                  placeholder="admin username"
-                  required
-                />
-              </label>
-              <label className={styles.formRow}>
-                <span className={styles.label}>Password</span>
-                <input
-                  className={styles.input}
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  placeholder="password"
-                  required
-                />
-              </label>
-              <button className={styles.btn} type="submit" disabled={saving}>
-                {saving ? "Signing in..." : "Sign in to Admin Portal"}
-              </button>
-            </form>
-
-            {error ? <p className={styles.error}>{error}</p> : null}
-            {success ? <p className={styles.success}>{success}</p> : null}
-            <p className={styles.tiny}>API base: {apiBaseUrl}</p>
-          </section>
-        </div>
+  if (me && !twoFactorVerified) {
+    return (
+      <main className={styles.authPage}>
+        <section className={styles.authCard}>
+          <h1>Two-Factor Verification</h1>
+          <p>Enter your 6-digit verification code to continue.</p>
+          {challengeHint ? <p className={styles.noticeInfo}>{challengeHint}</p> : null}
+          <form className={styles.authForm} onSubmit={handleVerifyTwoFactor}>
+            <label className={styles.field}>
+              <span>Code</span>
+              <input
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                placeholder="123456"
+                pattern="\d{6}"
+                maxLength={6}
+                required
+              />
+            </label>
+            <button type="submit" className={styles.actionPrimary} disabled={saving}>
+              {saving ? "Verifying..." : "Verify"}
+            </button>
+          </form>
+          <div className={styles.row}>
+            <button type="button" className={styles.actionGhost} onClick={() => token && startTwoFactorFlow(token)}>
+              Resend Code
+            </button>
+            <button type="button" className={styles.actionGhost} onClick={handleLogout}>
+              Cancel
+            </button>
+          </div>
+          {error ? <p className={styles.noticeError}>{error}</p> : null}
+          {success ? <p className={styles.noticeSuccess}>{success}</p> : null}
+        </section>
       </main>
     );
   }
 
   return (
-    <main className={styles.portal}>
-      <div className={styles.dashboardShell}>
+    <main className={styles.dashboardPage}>
+      <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <div className={styles.userRow}>
-            <div className={styles.avatar}>{displayName.slice(0, 1).toUpperCase()}</div>
-            <div className={styles.userMeta}>
-              <strong>{me?.username}</strong>
-              <span>workspace</span>
+          <div className={styles.brandBlock}>
+            <div className={styles.brandIcon}>UM</div>
+            <div>
+              <p className={styles.brandTitle}>University Management System</p>
+              <p className={styles.brandSubtitle}>Senior Management Command Center</p>
             </div>
           </div>
 
-          <div className={styles.searchWrap}>
-            <input className={styles.input} placeholder="Quick search" readOnly />
-            <span className={styles.searchHint}>Ctrl+K</span>
-          </div>
-
-          <nav className={styles.sideNav}>
-            {TAB_ITEMS.map((tab) => (
-              <button
-                key={tab.key}
-                className={`${styles.sideNavItem} ${activeTab === tab.key ? styles.sideNavItemActive : ""}`}
-                onClick={() => setActiveTab(tab.key)}
-                type="button"
-              >
-                <span className={styles.sideNavIcon}>{tab.short}</span>
-                {tab.label}
-              </button>
-            ))}
-          </nav>
-
-          <div className={styles.sidebarGroup}>
-            <p className={styles.groupTitle}>Internal monitoring</p>
-            {SIDEBAR_EXTRA_ITEMS.map((item) => (
-              <p key={item} className={styles.groupItem}>
-                {item}
-              </p>
-            ))}
-          </div>
-
-          <div className={styles.trialCard}>
-            <p className={styles.trialTitle}>Get a 30-day free trial</p>
-            <p className={styles.tiny}>Try all business features to improve team operations.</p>
-            <button className={styles.btn} type="button">
-              Start trial
-            </button>
-          </div>
-
-          <div className={styles.sidebarGroup}>
-            {FOOTER_ITEMS.map((item) => (
-              <p key={item} className={styles.groupItem}>
-                {item}
-              </p>
-            ))}
-          </div>
-
-          <div className={styles.sidebarApi}>
-            <p className={styles.tiny}>API base</p>
-            <p className={styles.muted}>{apiBaseUrl}</p>
-          </div>
-        </aside>
-
-        <section className={styles.workspace}>
-          <div className={styles.container}>
-            <header className={styles.header}>
-              <div>
-                <div className={styles.breadcrumb}>
-                  <span className={styles.breadcrumbDot} />
-                  <span>Get started</span>
-                </div>
-                <h1 className={styles.title}>Let&apos;s get you set up, {displayName}</h1>
-                <p className={styles.muted}>
-                  Central control panel for backend data powering your web and mobile apps.
-                </p>
-              </div>
-              <div className={styles.actions}>
-                <button className={styles.iconBtn} type="button" aria-label="Toggle layout">
-                  []
-                </button>
-                {me ? <span className={styles.badge}>Signed in: {me.username}</span> : null}
-                <button className={styles.btnSecondary} onClick={handleRefresh} disabled={loading || saving}>
-                  Refresh
-                </button>
-                <button className={styles.btnDanger} onClick={handleLogout}>
-                  Logout
-                </button>
-              </div>
-            </header>
-
-            {error ? <p className={styles.error}>{error}</p> : null}
-            {success ? <p className={styles.success}>{success}</p> : null}
-            {loading ? <p className={styles.muted}>Loading admin data...</p> : null}
-
-            {activeTab === "overview" ? (
-              <section className={styles.overviewStack}>
-                <article className={styles.bannerCard}>
-                  <div className={styles.bannerLeft}>
-                    <span className={styles.bannerDot} />
-                    <p className={styles.bannerTitle}>Connect a source to monitor your platform data</p>
-                    <span className={styles.heroPill}>GitHub</span>
-                  </div>
-                  <button className={styles.btnSecondary} type="button">
-                    Connect more sources
-                  </button>
-                </article>
-
-                <article className={styles.incidentCard}>
-                  <div className={styles.incidentHead}>
-                    <p className={styles.incidentTitle}>Discover your first incident</p>
-                    <span className={styles.heroPill}>Incidents detected</span>
-                  </div>
-                  <div className={styles.alertRow}>
-                    Incidents detected in your perimeter. Please remediate them as soon as possible.
-                  </div>
-                  <p className={styles.muted}>
-                    To start remediating incidents, go to the incidents page. If you&apos;re not sure what to do, review
-                    the remediation playbook.
-                  </p>
-                  <div className={styles.actions}>
-                    <button className={styles.btn} type="button" onClick={() => setActiveTab("articles")}>
-                      View incidents
+          <div className={styles.sidebarScroll}>
+            {SIDEBAR_SECTIONS.map((section) => (
+              <section key={section.title} className={styles.navSection}>
+                <p className={styles.navSectionTitle}>{section.title}</p>
+                <div className={styles.navList}>
+                  {section.items.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      className={cx(styles.navItem, activeMenuItem === item && styles.navItemActive)}
+                      onClick={() => setActiveMenuItem(item)}
+                    >
+                      <span className={styles.navDot}>*</span>
+                      {item}
                     </button>
-                    <button className={styles.btnSecondary} type="button" onClick={() => setActiveTab("authors")}>
-                      Learn remediation
-                    </button>
-                  </div>
-                </article>
-
-                <article className={styles.metricsCard}>
-                  <p className={styles.incidentTitle}>Platform snapshot</p>
-                  <div className={styles.metrics}>
-                    <article className={styles.metric}>
-                      <div className={styles.metricLabel}>Users</div>
-                      <div className={styles.metricValue}>{analytics?.users_total ?? 0}</div>
-                    </article>
-                    <article className={styles.metric}>
-                      <div className={styles.metricLabel}>Articles</div>
-                      <div className={styles.metricValue}>{analytics?.articles_total ?? 0}</div>
-                    </article>
-                    <article className={styles.metric}>
-                      <div className={styles.metricLabel}>Products</div>
-                      <div className={styles.metricValue}>{analytics?.products_total ?? 0}</div>
-                    </article>
-                    <article className={styles.metric}>
-                      <div className={styles.metricLabel}>Events</div>
-                      <div className={styles.metricValue}>{analytics?.events_total ?? 0}</div>
-                    </article>
-                    <article className={styles.metric}>
-                      <div className={styles.metricLabel}>Orders</div>
-                      <div className={styles.metricValue}>{analytics?.orders_total ?? 0}</div>
-                    </article>
-                    <article className={styles.metric}>
-                      <div className={styles.metricLabel}>Ticket Bookings</div>
-                      <div className={styles.metricValue}>{analytics?.ticket_bookings_total ?? 0}</div>
-                    </article>
-                  </div>
-                </article>
-
-                <div className={styles.list}>
-                  <article className={styles.item}>
-                    <h4>Article workflow snapshot</h4>
-                    <p>
-                      Draft: {articleStatusSummary.draft || 0} | Submitted: {articleStatusSummary.submitted || 0} |
-                      Approved: {articleStatusSummary.approved || 0} | Published: {articleStatusSummary.published || 0}
-                    </p>
-                  </article>
-
-                  <article className={styles.item}>
-                    <h4>Backend shortcuts</h4>
-                    <p>
-                      <a className={styles.badge} href={docsUrl} target="_blank" rel="noreferrer">
-                        API Docs
-                      </a>{" "}
-                      <a className={styles.badge} href={backendAdminUrl} target="_blank" rel="noreferrer">
-                        Django Admin
-                      </a>
-                    </p>
-                    <p className={styles.tiny}>Use this portal as the operating brain for web and mobile data.</p>
-                  </article>
+                  ))}
                 </div>
               </section>
-            ) : null}
+            ))}
+          </div>
+        </aside>
 
-        {activeTab === "products" ? (
-          <section className={`${styles.card} ${styles.panel}`}>
-            <div className={styles.list}>
-              <form className={styles.item} onSubmit={handleCreateBrand}>
-                <h4>Create Brand</h4>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Name</span>
-                  <input
-                    className={styles.input}
-                    value={brandForm.name}
-                    onChange={(event) => setBrandForm((current) => ({ ...current, name: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Logo URL</span>
-                  <input
-                    className={styles.input}
-                    value={brandForm.logo_url}
-                    onChange={(event) => setBrandForm((current) => ({ ...current, logo_url: event.target.value }))}
-                    placeholder="https://..."
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Description</span>
-                  <textarea
-                    className={styles.textarea}
-                    value={brandForm.description}
-                    onChange={(event) =>
-                      setBrandForm((current) => ({ ...current, description: event.target.value }))
-                    }
-                  />
-                </label>
-                <button className={styles.btn} type="submit" disabled={saving}>
-                  Add Brand
-                </button>
-              </form>
+        <section className={styles.main}>
+          <header className={styles.topbar}>
+  <div className={styles.topbarBrand}>
+    <div className={styles.topbarLogo}>KX</div>
+    <div className={styles.topbarSystem}>
+      <p>KultureX Admin Portal</p>
+      <span>Master Control System</span>
+    </div>
+  </div>
 
-              <form className={styles.item} onSubmit={handleCreateProduct}>
-                <h4>Create Product</h4>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Brand</span>
-                  <select
-                    className={styles.select}
-                    value={productForm.brand}
-                    onChange={(event) => setProductForm((current) => ({ ...current, brand: event.target.value }))}
-                    required
-                  >
-                    <option value="">Select brand</option>
-                    {brands.map((brand) => (
-                      <option key={brand.id} value={brand.id}>
-                        {brand.name}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Name</span>
-                  <input
-                    className={styles.input}
-                    value={productForm.name}
-                    onChange={(event) => setProductForm((current) => ({ ...current, name: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Image URL</span>
-                  <input
-                    className={styles.input}
-                    value={productForm.image_url}
-                    onChange={(event) => setProductForm((current) => ({ ...current, image_url: event.target.value }))}
-                    placeholder="https://..."
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Price</span>
-                  <input
-                    className={styles.input}
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={productForm.price}
-                    onChange={(event) => setProductForm((current) => ({ ...current, price: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Description</span>
-                  <textarea
-                    className={styles.textarea}
-                    value={productForm.description}
-                    onChange={(event) =>
-                      setProductForm((current) => ({ ...current, description: event.target.value }))
-                    }
-                  />
-                </label>
-                <button className={styles.btn} type="submit" disabled={saving}>
-                  Add Product
+  <div className={styles.topbarSearchWrap}>
+    <input
+      type="search"
+      className={styles.topbarSearch}
+      placeholder="Search users, products, orders, events..."
+      aria-label="Global search"
+    />
+  </div>
+
+  <div className={styles.topbarRight}>
+    <button type="button" className={styles.iconButton} aria-label="Notifications">
+      N
+    </button>
+    <button type="button" className={styles.iconButton} aria-label="Messages">
+      M
+    </button>
+    <button type="button" className={styles.iconButton} aria-label="Settings">
+      S
+    </button>
+    <button type="button" className={styles.profileMenu} aria-label="Profile menu">
+      <span className={styles.profileCircle}>O</span>
+      <div className={styles.profileBox}>
+        <p>{greeting}</p>
+        <span>Senior Management</span>
+      </div>
+      <span className={styles.profileChevron}>v</span>
+    </button>
+    <button type="button" className={styles.actionPrimary} onClick={handleLogout}>
+      Logout
+    </button>
+  </div>
+</header>
+
+          <section className={styles.workspace}>
+            <div className={styles.workspaceHead}>
+              <div>
+                <h1>{activeMenuItem === "Institutional Dashboard" ? "Institutional Dashboard" : activeMenuItem}</h1>
+                <p>Strategic overview across people, academics, operations, and finance.</p>
+              </div>
+              <div className={styles.row}>
+                <button type="button" className={styles.actionPrimary}>
+                  View KPI Monitor
                 </button>
-              </form>
+                <button type="button" className={styles.actionGhost}>
+                  Export Snapshot
+                </button>
+              </div>
             </div>
 
-            <div className={styles.list}>
-              {products.map((product) => (
-                <article className={styles.item} key={product.id}>
-                  <div className={styles.rowWrap}>
-                    {product.image_url ? <img className={styles.thumb} src={product.image_url} alt={product.name} /> : null}
-                    <div className={styles.rowGrow}>
-                      <h4>{product.name}</h4>
-                      <p>{product.description || "No description."}</p>
-                      <div className={styles.itemRow}>
-                        <span className={styles.badge}>${product.price}</span>
-                        <span className={styles.tiny}>{product.is_active ? "Active" : "Inactive"}</span>
-                      </div>
+            {error ? <p className={styles.noticeError}>{error}</p> : null}
+            {success ? <p className={styles.noticeSuccess}>{success}</p> : null}
+
+            <article className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2>Quick Stats</h2>
+                <span className={styles.todayBadge}>TODAY</span>
+              </div>
+              <div className={styles.statsGrid}>
+                {QUICK_STATS.map((item) => (
+                  <article key={item.label} className={styles.statCard}>
+                    <p className={styles.statLabel}>{item.label}</p>
+                    <p className={styles.statValue}>{item.value}</p>
+                    <p
+                      className={cx(
+                        styles.statDelta,
+                        item.tone === "up" && styles.statDeltaUp,
+                        item.tone === "down" && styles.statDeltaDown
+                      )}
+                    >
+                      {item.delta}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <div className={styles.splitGrid}>
+              <article className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2>Office Performance (Top 5)</h2>
+                  <span className={styles.softBadge}>Operational</span>
+                </div>
+                <div className={styles.listRows}>
+                  {OFFICE_PERFORMANCE.map((item) => (
+                    <div key={item.name} className={styles.listRow}>
+                      <span>{item.name}</span>
+                      <strong>{item.score}</strong>
+                      <span
+                        className={cx(
+                          styles.rowTrend,
+                          item.tone === "up" && styles.statDeltaUp,
+                          item.tone === "down" && styles.statDeltaDown
+                        )}
+                      >
+                        {item.trend}
+                      </span>
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-        {activeTab === "events" ? (
-          <section className={`${styles.card} ${styles.panel}`}>
-            <form className={styles.list} onSubmit={handleCreateEvent}>
-              <article className={styles.item}>
-                <h4>Create Event</h4>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Title</span>
-                  <input
-                    className={styles.input}
-                    value={eventForm.title}
-                    onChange={(event) => setEventForm((current) => ({ ...current, title: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Venue</span>
-                  <input
-                    className={styles.input}
-                    value={eventForm.venue}
-                    onChange={(event) => setEventForm((current) => ({ ...current, venue: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>City</span>
-                  <input
-                    className={styles.input}
-                    value={eventForm.city}
-                    onChange={(event) => setEventForm((current) => ({ ...current, city: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Start</span>
-                  <input
-                    className={styles.input}
-                    type="datetime-local"
-                    value={eventForm.start_at}
-                    onChange={(event) => setEventForm((current) => ({ ...current, start_at: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>End</span>
-                  <input
-                    className={styles.input}
-                    type="datetime-local"
-                    value={eventForm.end_at}
-                    onChange={(event) => setEventForm((current) => ({ ...current, end_at: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Capacity</span>
-                  <input
-                    className={styles.input}
-                    type="number"
-                    min="1"
-                    value={eventForm.capacity}
-                    onChange={(event) => setEventForm((current) => ({ ...current, capacity: event.target.value }))}
-                    required
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Cover Image URL</span>
-                  <input
-                    className={styles.input}
-                    value={eventForm.cover_image_url}
-                    onChange={(event) =>
-                      setEventForm((current) => ({ ...current, cover_image_url: event.target.value }))
-                    }
-                    placeholder="https://..."
-                  />
-                </label>
-                <label className={styles.formRow}>
-                  <span className={styles.label}>Description</span>
-                  <textarea
-                    className={styles.textarea}
-                    value={eventForm.description}
-                    onChange={(event) => setEventForm((current) => ({ ...current, description: event.target.value }))}
-                  />
-                </label>
-                <button className={styles.btn} type="submit" disabled={saving}>
-                  Add Event
+                  ))}
+                </div>
+                <button className={styles.inlineLink} type="button">
+                  View All Offices ->
                 </button>
               </article>
-            </form>
 
-            <div className={styles.list}>
-              {events.map((item) => (
-                <article className={styles.item} key={item.id}>
-                  <h4>{item.title}</h4>
-                  <p>
-                    {item.venue}, {item.city}
-                  </p>
-                  <p className={styles.tiny}>
-                    {formatDate(item.start_at)} to {formatDate(item.end_at)}
-                  </p>
-                  <div className={styles.itemRow}>
-                    <span className={styles.badge}>Capacity {item.capacity}</span>
-                    <span className={styles.tiny}>{item.is_published ? "Published" : "Draft"}</span>
-                  </div>
-                </article>
-              ))}
+              <article className={styles.card}>
+                <div className={styles.cardHeader}>
+                  <h2>Financial Health</h2>
+                  <span className={styles.softBadge}>YTD</span>
+                </div>
+                <div className={styles.listRows}>
+                  {FINANCIAL_HEALTH.map((item) => (
+                    <div key={item.metric} className={styles.listRow}>
+                      <span>{item.metric}</span>
+                      <strong>{item.value}</strong>
+                      <span className={styles.statDeltaUp}>{item.trend}</span>
+                    </div>
+                  ))}
+                </div>
+                <button className={styles.inlineLink} type="button">
+                  View Full Financials ->
+                </button>
+              </article>
             </div>
-          </section>
-        ) : null}
 
-        {activeTab === "authors" ? (
-          <section className={styles.card}>
-            <div className={styles.list}>
-              {users.map((user) => (
-                <article key={user.id} className={styles.item}>
-                  <div className={styles.itemRow}>
-                    <div>
-                      <h4>{user.username}</h4>
-                      <p>{user.email}</p>
-                    </div>
-                    <div className={styles.actions}>
-                      <select
-                        className={styles.select}
-                        value={roleDrafts[user.id] || user.role}
-                        onChange={(event) =>
-                          setRoleDrafts((current) => ({
-                            ...current,
-                            [user.id]: event.target.value as UserRole
-                          }))
-                        }
-                      >
-                        <option value="registered">Registered</option>
-                        <option value="author">Author</option>
-                        <option value="editor">Editor</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                      <button className={styles.btnSecondary} onClick={() => handleRoleSave(user.id)} disabled={saving}>
-                        Save Role
-                      </button>
-                    </div>
+            <article className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2>Recent Activity</h2>
+                <span className={styles.softBadge}>Live</span>
+              </div>
+              <div className={styles.activityRows}>
+                {RECENT_ACTIVITY.map((entry) => (
+                  <div key={`${entry.time}-${entry.text}`} className={styles.activityRow}>
+                    <span>{entry.time}</span>
+                    <p>{entry.text}</p>
                   </div>
-                </article>
-              ))}
-            </div>
+                ))}
+              </div>
+            </article>
           </section>
-        ) : null}
-
-        {activeTab === "articles" ? (
-          <section className={styles.card}>
-            <div className={styles.list}>
-              {articles.map((article) => (
-                <article className={styles.item} key={article.id}>
-                  <div className={styles.itemRow}>
-                    <div>
-                      <h4>{article.title}</h4>
-                      <p>{article.summary || "No summary."}</p>
-                      <p className={styles.tiny}>
-                        Author: {article.author_username} | Status: {article.status} | {formatDate(article.published_at)}
-                      </p>
-                    </div>
-                    <div className={styles.actions}>
-                      {article.status === "submitted" ? (
-                        <>
-                          <button
-                            className={styles.btn}
-                            onClick={() => handleArticleAction(article.id, "approve")}
-                            disabled={saving}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            className={styles.btnDanger}
-                            onClick={() => handleArticleAction(article.id, "reject")}
-                            disabled={saving}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      ) : null}
-                      {article.status === "approved" ? (
-                        <button
-                          className={styles.btnSecondary}
-                          onClick={() => handleArticleAction(article.id, "publish")}
-                          disabled={saving}
-                        >
-                          Publish
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </section>
-        ) : null}
-
-          </div>
         </section>
-
-        <aside className={styles.rightRail}>
-          <section className={styles.sidebarCard}>
-            <h3>Resources</h3>
-            <a className={styles.resourceLink} href={docsUrl} target="_blank" rel="noreferrer">
-              Documentation
-            </a>
-            <a className={styles.resourceLink} href={backendAdminUrl} target="_blank" rel="noreferrer">
-              Django Admin
-            </a>
-          </section>
-
-          <section className={styles.sidebarCard}>
-            <h3>Go further</h3>
-            <button className={styles.quickAction} type="button" onClick={() => setActiveTab("products")}>
-              Add products
-            </button>
-            <button className={styles.quickAction} type="button" onClick={() => setActiveTab("events")}>
-              Create events
-            </button>
-            <button className={styles.quickAction} type="button" onClick={() => setActiveTab("articles")}>
-              Review articles
-            </button>
-          </section>
-
-          <section className={styles.sidebarCard}>
-            <h3>Help articles</h3>
-            <div className={styles.helpList}>
-              {HELP_LINKS.map((item) => (
-                <p key={item} className={styles.resourceLink}>
-                  {item}
-                </p>
-              ))}
-            </div>
-          </section>
-        </aside>
       </div>
     </main>
   );
 }
+

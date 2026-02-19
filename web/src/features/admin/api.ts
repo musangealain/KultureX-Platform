@@ -5,7 +5,22 @@ export const ADMIN_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http
   ""
 );
 
-export type UserRole = "admin" | "editor" | "author" | "registered";
+export type UserRole = "super_admin" | "admin" | "moderator" | "editor" | "author" | "registered";
+
+export type AdminPermissions = {
+  is_super_admin: boolean;
+  is_admin: boolean;
+  can_access_admin_portal: boolean;
+  can_manage_users: boolean;
+  can_manage_roles: boolean;
+  can_manage_products: boolean;
+  can_manage_events: boolean;
+  can_review_articles: boolean;
+  can_publish_articles: boolean;
+  can_moderate_community: boolean;
+  can_view_analytics: boolean;
+  can_manage_system: boolean;
+};
 
 export type AuthTokens = {
   access: string;
@@ -21,6 +36,9 @@ export type AdminUser = {
   role: UserRole;
   bio: string;
   avatar_url: string;
+  two_factor_enabled: boolean;
+  two_factor_verified_at: string | null;
+  permissions: AdminPermissions;
 };
 
 export type AdminAnalytics = {
@@ -71,6 +89,18 @@ export type Article = {
   status: string;
   author_username: string;
   published_at: string | null;
+};
+
+export type TwoFactorChallenge = {
+  challenge_id: string;
+  expires_in: number;
+  delivery: "app" | "email";
+  code?: string;
+};
+
+export type TwoFactorVerification = {
+  verified: boolean;
+  verified_at: string;
 };
 
 type RequestOptions = Omit<RequestInit, "body"> & {
@@ -146,6 +176,32 @@ export async function loginAdmin(username: string, password: string): Promise<Au
 
 export async function getMe(token: string): Promise<AdminUser> {
   return adminRequest<AdminUser>("/auth/me/", { token });
+}
+
+export async function requestTwoFactorChallenge(
+  token: string,
+  delivery: "app" | "email" = "app"
+): Promise<TwoFactorChallenge> {
+  return adminRequest<TwoFactorChallenge>("/auth/2fa/challenge/", {
+    method: "POST",
+    token,
+    body: { delivery }
+  });
+}
+
+export async function verifyTwoFactorCode(
+  token: string,
+  challengeId: string,
+  code: string
+): Promise<TwoFactorVerification> {
+  return adminRequest<TwoFactorVerification>("/auth/2fa/verify/", {
+    method: "POST",
+    token,
+    body: {
+      challenge_id: challengeId,
+      code
+    }
+  });
 }
 
 export async function getAnalytics(token: string): Promise<AdminAnalytics> {

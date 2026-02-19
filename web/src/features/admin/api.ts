@@ -1,6 +1,9 @@
 import { normalizeList, type ListResponse } from "@/lib/api/types";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+export const ADMIN_API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1").replace(
+  /\/$/,
+  ""
+);
 
 export type UserRole = "admin" | "editor" | "author" | "registered";
 
@@ -102,15 +105,29 @@ async function adminRequest<T>(path: string, options: RequestOptions = {}): Prom
     headers.set("Authorization", `Bearer ${options.token}`);
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    cache: "no-store"
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${ADMIN_API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+      cache: "no-store"
+    });
+  } catch {
+    throw new Error(
+      `Cannot reach the backend API (${ADMIN_API_BASE_URL}). Start Django: cd backend; python manage.py runserver`
+    );
+  }
 
   const text = await response.text();
-  const payload = text ? (JSON.parse(text) as unknown) : null;
+  let payload: unknown = null;
+  if (text) {
+    try {
+      payload = JSON.parse(text) as unknown;
+    } catch {
+      payload = { detail: text };
+    }
+  }
 
   if (!response.ok) {
     const fallback = `Request failed (${response.status})`;

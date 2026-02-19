@@ -41,6 +41,14 @@ const TAB_ITEMS: Array<{ key: TabKey; label: string }> = [
   { key: "articles", label: "Articles" }
 ];
 
+const HELP_LINKS = [
+  "How to set up your workspace?",
+  "How to manage products and inventory?",
+  "How to schedule and publish events?",
+  "How to review and publish articles?",
+  "How to assign user roles safely?"
+];
+
 const initialBrandForm = {
   name: "",
   description: "",
@@ -109,6 +117,7 @@ export default function AdminPortal() {
 
   const docsUrl = useMemo(() => deriveBaseUrl("/api/docs/"), []);
   const backendAdminUrl = useMemo(() => deriveBaseUrl("/admin/"), []);
+  const apiBaseUrl = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api/v1", []);
 
   const clearAlerts = useCallback(() => {
     setError("");
@@ -352,15 +361,36 @@ export default function AdminPortal() {
     }, {});
   }, [articles]);
 
+  const displayName = useMemo(() => {
+    if (!me) {
+      return "Administrator";
+    }
+    const fullName = `${me.first_name || ""} ${me.last_name || ""}`.trim();
+    return fullName || me.username;
+  }, [me]);
+
   if (!token) {
     return (
       <main className={styles.portal}>
-        <div className={`${styles.container} ${styles.loginWrap}`}>
-          <section className={styles.card}>
-            <h1 className={styles.title}>KultureX Admin Portal</h1>
-            <p className={styles.muted}>
-              Control products, events, creators, and publishing workflows for web + mobile.
+        <div className={styles.loginShell}>
+          <section className={styles.loginHero}>
+            <span className={styles.heroPill}>KultureX Control Center</span>
+            <h1 className={styles.heroTitle}>Operate web + mobile from one admin brain.</h1>
+            <p className={styles.heroCopy}>
+              Manage products, events, creators, and publishing workflows in one place with the same design language as
+              your storefront.
             </p>
+            <ul className={styles.heroList}>
+              <li>Catalog and inventory operations</li>
+              <li>Event publishing and bookings</li>
+              <li>Author and editor role governance</li>
+              <li>Editorial review and publishing</li>
+            </ul>
+          </section>
+
+          <section className={styles.loginCard}>
+            <h1 className={styles.title}>Admin login</h1>
+            <p className={styles.muted}>Sign in with your superuser credentials.</p>
 
             <form className={styles.formGrid} onSubmit={handleLoginSubmit}>
               <label className={styles.formRow}>
@@ -391,6 +421,7 @@ export default function AdminPortal() {
 
             {error ? <p className={styles.error}>{error}</p> : null}
             {success ? <p className={styles.success}>{success}</p> : null}
+            <p className={styles.tiny}>API base: {apiBaseUrl}</p>
           </section>
         </div>
       </main>
@@ -399,41 +430,64 @@ export default function AdminPortal() {
 
   return (
     <main className={styles.portal}>
-      <div className={styles.container}>
-        <header className={styles.header}>
-          <div>
-            <h1 className={styles.title}>KultureX Admin Portal</h1>
-            <p className={styles.muted}>
-              Central control panel for backend data powering web and mobile apps.
-            </p>
+      <div className={styles.dashboardShell}>
+        <aside className={styles.sidebar}>
+          <div className={styles.userRow}>
+            <div className={styles.avatar}>{displayName.slice(0, 1).toUpperCase()}</div>
+            <div className={styles.userMeta}>
+              <strong>{me?.username}</strong>
+              <span>Admin Portal</span>
+            </div>
           </div>
-          <div className={styles.actions}>
-            {me ? <span className={styles.badge}>Signed in: {me.username}</span> : null}
-            <button className={styles.btnSecondary} onClick={handleRefresh} disabled={loading || saving}>
-              Refresh
-            </button>
-            <button className={styles.btnDanger} onClick={handleLogout}>
-              Logout
-            </button>
+
+          <label className={styles.formRow}>
+            <span className={styles.label}>Quick search</span>
+            <input className={styles.input} placeholder="Search section..." readOnly />
+          </label>
+
+          <nav className={styles.sideNav}>
+            {TAB_ITEMS.map((tab) => (
+              <button
+                key={tab.key}
+                className={`${styles.sideNavItem} ${activeTab === tab.key ? styles.sideNavItemActive : ""}`}
+                onClick={() => setActiveTab(tab.key)}
+                type="button"
+              >
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+
+          <div className={styles.sidebarCard}>
+            <p className={styles.tiny}>API base</p>
+            <p className={styles.muted}>{apiBaseUrl}</p>
           </div>
-        </header>
+        </aside>
 
-        {error ? <p className={styles.error}>{error}</p> : null}
-        {success ? <p className={styles.success}>{success}</p> : null}
-        {loading ? <p className={styles.muted}>Loading admin data...</p> : null}
+        <section className={styles.workspace}>
+          <div className={styles.container}>
+            <header className={styles.header}>
+              <div>
+                <span className={styles.heroPill}>Get started</span>
+                <h1 className={styles.title}>Let&apos;s get you set up, {displayName}</h1>
+                <p className={styles.muted}>
+                  Central control panel for backend data powering your web and mobile apps.
+                </p>
+              </div>
+              <div className={styles.actions}>
+                {me ? <span className={styles.badge}>Signed in: {me.username}</span> : null}
+                <button className={styles.btnSecondary} onClick={handleRefresh} disabled={loading || saving}>
+                  Refresh
+                </button>
+                <button className={styles.btnDanger} onClick={handleLogout}>
+                  Logout
+                </button>
+              </div>
+            </header>
 
-        <nav className={styles.tabRow}>
-          {TAB_ITEMS.map((tab) => (
-            <button
-              key={tab.key}
-              className={`${styles.tab} ${activeTab === tab.key ? styles.tabActive : ""}`}
-              onClick={() => setActiveTab(tab.key)}
-              type="button"
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+            {error ? <p className={styles.error}>{error}</p> : null}
+            {success ? <p className={styles.success}>{success}</p> : null}
+            {loading ? <p className={styles.muted}>Loading admin data...</p> : null}
 
         {activeTab === "overview" ? (
           <section className={styles.card}>
@@ -804,6 +858,45 @@ export default function AdminPortal() {
             </div>
           </section>
         ) : null}
+
+          </div>
+        </section>
+
+        <aside className={styles.rightRail}>
+          <section className={styles.sidebarCard}>
+            <h3>Resources</h3>
+            <a className={styles.resourceLink} href={docsUrl} target="_blank" rel="noreferrer">
+              Documentation
+            </a>
+            <a className={styles.resourceLink} href={backendAdminUrl} target="_blank" rel="noreferrer">
+              Django Admin
+            </a>
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <h3>Go further</h3>
+            <button className={styles.quickAction} type="button" onClick={() => setActiveTab("products")}>
+              Add products
+            </button>
+            <button className={styles.quickAction} type="button" onClick={() => setActiveTab("events")}>
+              Create events
+            </button>
+            <button className={styles.quickAction} type="button" onClick={() => setActiveTab("articles")}>
+              Review articles
+            </button>
+          </section>
+
+          <section className={styles.sidebarCard}>
+            <h3>Help articles</h3>
+            <div className={styles.helpList}>
+              {HELP_LINKS.map((item) => (
+                <p key={item} className={styles.resourceLink}>
+                  {item}
+                </p>
+              ))}
+            </div>
+          </section>
+        </aside>
       </div>
     </main>
   );

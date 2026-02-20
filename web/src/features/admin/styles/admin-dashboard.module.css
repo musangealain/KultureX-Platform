@@ -19,6 +19,7 @@
   min-height: 100vh;
   margin: 0;
   display: grid;
+  grid-template-columns: 240px minmax(0, 1fr) 300px;
   grid-template-rows: 64px 1fr;
   background: var(--bg-page);
   color: var(--text);
@@ -28,14 +29,17 @@
 }
 
 .topbar {
+  grid-column: 2 / 4;
+  grid-row: 1;
   height: 64px;
   display: grid;
-  grid-template-columns: auto minmax(320px, 420px) auto;
+  grid-template-columns: minmax(320px, 460px) auto;
   align-items: center;
   gap: 18px;
   padding: 0 18px;
   border-bottom: 1px solid var(--border);
   background: var(--surface);
+  justify-content: space-between;
 }
 
 .topbarBrand {
@@ -280,25 +284,65 @@
 }
 
 .dashboardLayout {
-  min-height: calc(100vh - 64px);
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr) 300px;
-  background: var(--bg-page);
+  display: contents;
 }
 
 .dashboardSidebar {
+  grid-column: 1;
+  grid-row: 1 / 3;
   border-right: 1px solid var(--border);
   background: var(--surface);
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   overflow: hidden;
+  overflow-x: hidden;
+}
+
+.sidebarBrand {
+  height: 64px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  background: #ffffff;
+}
+
+.sidebarBrandLogo {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #dbe2f0;
+  background: #eef2fb;
+  color: #28365a;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.sidebarBrandText {
+  color: #1f2c4a;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
 }
 
 .sidebarScroll {
   max-height: calc(100vh - 64px);
   overflow-y: auto;
-  padding: 10px 10px 20px;
+  overflow-x: hidden;
+  padding: 10px 10px 72px;
   display: grid;
   gap: 14px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebarScroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
 }
 
 .sidebarCategory {
@@ -334,7 +378,7 @@
   justify-content: space-between;
   gap: 8px;
   text-align: left;
-  padding: 6px 8px;
+  padding: 6px 12px 6px 8px;
   border-radius: 8px;
   cursor: pointer;
 }
@@ -386,15 +430,50 @@
 
 .sidebarGroupChevron {
   color: #8a95ad;
-  font-size: 11px;
-  font-weight: 600;
+  width: 14px;
+  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: transform 220ms ease, color 120ms ease;
+  transform-origin: center;
+  margin-right: 2px;
+}
+
+.sidebarGroupChevronOpen {
+  transform: rotate(90deg) translateX(1px);
+  color: #6b7692;
+}
+
+.sidebarChevronIcon {
+  width: 12px;
+  height: 12px;
+  display: block;
 }
 
 .sidebarGroupItems {
   display: grid;
   gap: 1px;
+  padding: 0 4px 0 26px;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-7px);
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    max-height 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 180ms ease,
+    transform 220ms ease,
+    padding 220ms ease;
+}
+
+.sidebarGroupItemsOpen {
   padding: 1px 4px 2px 26px;
+  max-height: 320px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .sidebarFeatureLink {
@@ -422,12 +501,19 @@
 }
 
 .sidebarFeatureLinkActive {
-  background: #eef1ff;
+  background: transparent;
   color: var(--accent);
   font-weight: 600;
 }
 
+.sidebarFeatureLinkActive:hover {
+  background: transparent;
+  color: var(--accent);
+}
+
 .dashboardWorkspace {
+  grid-column: 2;
+  grid-row: 2;
   min-width: 0;
   padding: 20px;
   display: grid;
@@ -683,6 +769,8 @@
 }
 
 .dashboardRail {
+  grid-column: 3;
+  grid-row: 2;
   border-left: 1px solid var(--border);
   background: var(--surface);
   padding: 14px;
@@ -849,7 +937,7 @@
 }
 
 @media (max-width: 1360px) {
-  .dashboardLayout {
+  .dashboardPage {
     grid-template-columns: 220px minmax(0, 1fr) 270px;
   }
 
@@ -865,9 +953,13 @@
 @media (max-width: 1180px) {
   .dashboardPage {
     overflow: auto;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
   }
 
   .topbar {
+    grid-column: 1;
+    grid-row: 1;
     height: auto;
     grid-template-columns: 1fr;
     gap: 10px;
@@ -884,13 +976,22 @@
   }
 
   .dashboardLayout {
+    display: grid;
     grid-template-columns: 1fr;
+    grid-row: 2;
   }
 
   .dashboardSidebar,
   .dashboardRail {
+    grid-column: auto;
+    grid-row: auto;
     border: none;
     min-height: auto;
+  }
+
+  .dashboardWorkspace {
+    grid-column: auto;
+    grid-row: auto;
   }
 
   .sidebarScroll {
@@ -931,7 +1032,6 @@
 }
 
 @media (max-width: 760px) {
-  .topbarBrand,
   .topbarSearchWrap {
     width: 100%;
   }

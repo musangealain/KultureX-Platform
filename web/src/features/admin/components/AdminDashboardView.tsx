@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import styles from "../styles/admin-dashboard.module.css";
 import {
   MESSAGE_ITEMS,
@@ -155,7 +157,25 @@ function SidebarGlyph({ sectionKey }: { sectionKey: DashboardSectionKey }) {
     case "security_compliance_center":
       return (
         <svg viewBox="0 0 24 24" className={styles.sidebarIconSvg}>
-          <path d="M7 11V8a5 5 0 0 1 10 0v3m-9 0h8v9H8z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+          <circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" strokeWidth="1.9" />
+          <path
+            d="M8.9 10V8.8a3.1 3.1 0 0 1 6.2 0V10"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+          />
+          <path
+            d="M10.2 10V9.1a1.8 1.8 0 0 1 3.6 0V10"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.3"
+            strokeLinecap="round"
+          />
+          <rect x="8.3" y="10" width="7.4" height="6.9" rx="1.1" fill="currentColor" />
+          <rect x="8.7" y="10.4" width="6.6" height="6.1" rx="0.9" fill="none" stroke="#ffffff" strokeWidth="0.5" />
+          <circle cx="12" cy="13.1" r="0.7" fill="#ffffff" />
+          <path d="M12 13.8v1.5" stroke="#ffffff" strokeWidth="1.1" strokeLinecap="round" />
         </svg>
       );
     default:
@@ -187,16 +207,43 @@ export default function AdminDashboardView({
   onClearSelection,
   onLogout
 }: AdminDashboardViewProps) {
+  const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!pinnedSidebarGroup) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const container = sidebarScrollRef.current;
+      if (!container) {
+        return;
+      }
+
+      const target = container.querySelector<HTMLElement>(`[data-sidebar-group="${pinnedSidebarGroup}"]`);
+      if (!target) {
+        return;
+      }
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+
+      const overflowBottom = targetRect.bottom - containerRect.bottom;
+      const overflowTop = containerRect.top - targetRect.top;
+
+      if (overflowBottom > 0) {
+        container.scrollBy({ top: overflowBottom + 18, behavior: "smooth" });
+      } else if (overflowTop > 0) {
+        container.scrollBy({ top: -(overflowTop + 12), behavior: "smooth" });
+      }
+    }, 40);
+
+    return () => window.clearTimeout(timer);
+  }, [pinnedSidebarGroup]);
+
   return (
     <main className={styles.dashboardPage}>
       <header className={styles.topbar}>
-        <div className={styles.topbarBrand}>
-          <div className={styles.topbarLogo}>KX</div>
-          <div className={styles.topbarSystem}>
-            <p>KultureX Systems</p>
-          </div>
-        </div>
-
         <div className={styles.topbarSearchWrap}>
           <label className={styles.searchShell}>
             <span className={styles.searchIcon} aria-hidden="true">
@@ -304,7 +351,11 @@ export default function AdminDashboardView({
 
       <div className={styles.dashboardLayout}>
         <aside className={styles.dashboardSidebar}>
-          <div className={styles.sidebarScroll}>
+          <div className={styles.sidebarBrand}>
+            <span className={styles.sidebarBrandLogo}>KX</span>
+            <span className={styles.sidebarBrandText}>KultureX Systems</span>
+          </div>
+          <div className={styles.sidebarScroll} ref={sidebarScrollRef}>
             {SIDEBAR_CATEGORIES.map((category) => (
               <section key={category.title} className={styles.sidebarCategory}>
                 <p className={styles.sidebarCategoryTitle}>{category.title}</p>
@@ -312,7 +363,7 @@ export default function AdminDashboardView({
                   {category.items.map((group) => {
                     const isOpen = pinnedSidebarGroup === group.sectionKey;
                     return (
-                      <section key={group.title} className={styles.sidebarGroup}>
+                      <section key={group.title} className={styles.sidebarGroup} data-sidebar-group={group.sectionKey}>
                         <button
                           type="button"
                           className={`${styles.sidebarGroupTrigger} ${isOpen ? styles.sidebarGroupTriggerOpen : ""}`}
@@ -325,29 +376,43 @@ export default function AdminDashboardView({
                             </span>
                             <span className={styles.sidebarSectionTitle}>{cleanSidebarTitle(group.title)}</span>
                           </span>
-                          <span className={styles.sidebarGroupChevron} aria-hidden="true">
-                            {isOpen ? "▾" : "▸"}
+                          <span
+                            className={`${styles.sidebarGroupChevron} ${isOpen ? styles.sidebarGroupChevronOpen : ""}`}
+                            aria-hidden="true"
+                          >
+                            <svg viewBox="0 0 24 24" className={styles.sidebarChevronIcon}>
+                              <path
+                                d="M9 6l6 6l-6 6"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
                           </span>
                         </button>
 
-                        {isOpen ? (
-                          <div className={styles.sidebarGroupItems}>
-                            {group.features.map((feature) => {
-                              const isActive = activeSidebarFeature?.id === feature.id;
-                              return (
-                                <button
-                                  key={feature.id}
-                                  type="button"
-                                  className={`${styles.sidebarFeatureLink} ${isActive ? styles.sidebarFeatureLinkActive : ""}`}
-                                  onClick={() => onFeatureSelect(group.sectionKey, feature)}
-                                >
-                                  <span className={styles.sidebarFeatureDot} aria-hidden="true" />
-                                  <span>{feature.label}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        ) : null}
+                        <div
+                          className={`${styles.sidebarGroupItems} ${isOpen ? styles.sidebarGroupItemsOpen : ""}`}
+                          aria-hidden={!isOpen}
+                        >
+                          {group.features.map((feature) => {
+                            const isActive = activeSidebarFeature?.id === feature.id;
+                            return (
+                              <button
+                                key={feature.id}
+                                type="button"
+                                className={`${styles.sidebarFeatureLink} ${isActive ? styles.sidebarFeatureLinkActive : ""}`}
+                                onClick={() => onFeatureSelect(group.sectionKey, feature)}
+                                tabIndex={isOpen ? 0 : -1}
+                              >
+                                <span className={styles.sidebarFeatureDot} aria-hidden="true" />
+                                <span>{feature.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </section>
                     );
                   })}

@@ -260,132 +260,119 @@ export const DASHBOARD_SECTIONS: DashboardSection[] = [
 export const SIDEBAR_GROUPS: SidebarGroup[] = [
   {
     sectionKey: "master_dashboard",
-    title: "1. Master Dashboard",
+    title: "Master Dashboard",
     features: [
-      { id: "active_users", label: "Active users" },
-      { id: "articles_today", label: "Published stories today" },
-      { id: "revenue_today", label: "Revenue today" },
-      { id: "active_events", label: "Active events" },
-      { id: "system_health", label: "System health" },
-      { id: "live_sales_graph", label: "Sales graph" },
-      { id: "user_growth_heatmap", label: "User growth heatmap" },
-      { id: "engagement_leaderboard", label: "Engagement leaderboard" }
+      { id: "system_status", label: "System Status" },
+      { id: "live_metrics", label: "Live Metrics" },
+      { id: "engagement_board", label: "Engagement Board" },
+      { id: "performance_monitor", label: "Performance Monitor" }
     ]
   },
   {
     sectionKey: "user_role_management",
-    title: "2. User & Role Management",
+    title: "Users & Roles",
     features: [
-      { id: "role_permissions_matrix", label: "Role permissions matrix" },
-      { id: "session_tracking", label: "Session monitor" },
-      { id: "device_tracking", label: "Device monitor" },
-      { id: "account_verification", label: "Account verification" },
-      { id: "shadow_banning", label: "Shadow ban controls" },
-      { id: "activity_timeline", label: "User activity timeline" }
+      { id: "user_directory", label: "User Directory" },
+      { id: "role_matrix", label: "Role Matrix" },
+      { id: "sessions_devices", label: "Sessions & Devices" },
+      { id: "verification", label: "Verification" },
+      { id: "activity_logs", label: "Activity Logs" }
     ]
   },
   {
     sectionKey: "content_media_cms",
-    title: "3. Content & Media CMS",
+    title: "Content Studio",
     features: [
-      { id: "draft_review_publish", label: "Editorial pipeline" },
-      { id: "content_versioning", label: "Version history" },
-      { id: "featured_content", label: "Featured content control" },
-      { id: "multilanguage_support", label: "Multilingual content" },
-      { id: "cdn_media_storage", label: "Media CDN storage" },
-      { id: "auto_compression", label: "Auto compression" },
-      { id: "ai_content_tagging", label: "AI media tagging" }
+      { id: "articles_pipeline", label: "Articles Pipeline" },
+      { id: "media_library", label: "Media Library" },
+      { id: "version_history", label: "Version History" },
+      { id: "featured_content", label: "Featured Content" },
+      { id: "localization", label: "Localization" }
     ]
   },
   {
     sectionKey: "shop_commerce_engine",
-    title: "4. Shop & Commerce Engine",
+    title: "Commerce Hub",
     features: [
-      { id: "catalog_manager", label: "Product catalog manager" },
-      { id: "product_model_uploads", label: "3D product model uploads" },
-      { id: "inventory_forecasting", label: "Stock forecasting" },
-      { id: "drop_campaigns", label: "Limited drop campaigns" },
-      { id: "fulfillment_workflow", label: "Fulfillment workflow" },
-      { id: "vendor_management", label: "Vendor management" }
+      { id: "products", label: "Products" },
+      { id: "inventory", label: "Inventory" },
+      { id: "campaign_drops", label: "Campaign Drops" },
+      { id: "orders_fulfillment", label: "Orders & Fulfillment" },
+      { id: "vendors", label: "Vendors" }
     ]
   },
   {
     sectionKey: "events_ticketing_system",
-    title: "5. Events & Ticketing System",
+    title: "Events Platform",
     features: [
-      { id: "event_creation", label: "Event scheduling" },
-      { id: "ticket_pricing_tiers", label: "Ticket pricing tiers" },
-      { id: "qr_ticket_system", label: "QR ticket system" },
-      { id: "attendance_analytics", label: "Attendance analytics" },
-      { id: "event_livestream_control", label: "Event livestream control" }
+      { id: "event_calendar", label: "Event Calendar" },
+      { id: "ticketing", label: "Ticketing" },
+      { id: "attendance", label: "Attendance" },
+      { id: "livestream_control", label: "Livestream Control" },
+      { id: "event_analytics", label: "Event Analytics" }
     ]
   },
   {
     sectionKey: "community_moderation_hub",
-    title: "6. Community Moderation Hub",
+    title: "Moderation Center",
     features: [
-      { id: "comment_moderation_queue", label: "Comment moderation queue" },
-      { id: "ai_toxicity_detection", label: "AI toxicity scan" },
-      { id: "user_reports_dashboard", label: "User reports dashboard" },
-      { id: "content_takedown_tools", label: "Content takedown tools" },
-      { id: "policy_management", label: "Policy management" }
+      { id: "reports_queue", label: "Reports Queue" },
+      { id: "toxicity_detection", label: "Toxicity Detection" },
+      { id: "content_actions", label: "Content Actions" },
+      { id: "community_rules", label: "Community Rules" }
     ]
   },
   {
     sectionKey: "mobile_control_center",
-    title: "7. Mobile App Control Center",
+    title: "Mobile Control Center",
     features: [
-      { id: "push_manager", label: "Push notification manager" },
-      { id: "inapp_banners", label: "In-app banners" },
-      { id: "feature_flags", label: "Feature flags" },
-      { id: "homepage_layout_editor", label: "Mobile homepage layout editor" },
-      { id: "ab_testing_mobile", label: "Mobile A/B testing" }
+      { id: "push_notifications", label: "Push Notifications" },
+      { id: "in_app_banners", label: "In-App Banners" },
+      { id: "feature_flags", label: "Feature Flags" },
+      { id: "mobile_layout_editor", label: "Mobile Layout Editor" },
+      { id: "ab_testing", label: "A/B Testing" }
     ]
   },
   {
     sectionKey: "ai_recommendation_engine",
-    title: "8. AI Intelligence Engine",
+    title: "AI Intelligence",
     features: [
-      { id: "article_recommendations", label: "Article recommendations" },
-      { id: "product_recommendations", label: "Product recommendations" },
-      { id: "trending_spots_creators", label: "Trending spots & creators" },
-      { id: "ai_moderation_assistant", label: "AI moderation assistant" },
-      { id: "ai_analytics_assistant", label: "AI analytics assistant" }
+      { id: "recommendations", label: "Recommendations" },
+      { id: "trending_engine", label: "Trending Engine" },
+      { id: "ai_moderator", label: "AI Moderator" },
+      { id: "admin_ai_assistant", label: "Admin AI Assistant" }
     ]
   },
   {
     sectionKey: "analytics_bi",
-    title: "9. Analytics & BI",
+    title: "Analytics & BI",
     features: [
-      { id: "dau_mau", label: "DAU / MAU tracker" },
-      { id: "shop_conversion_rate", label: "Shop conversion rate" },
-      { id: "engagement_score", label: "Content engagement score" },
-      { id: "attendance_trends", label: "Event attendance trends" },
-      { id: "retention_cohorts", label: "User retention cohorts" },
-      { id: "export_csv_powerbi", label: "CSV / PowerBI export" },
-      { id: "analytics_dashboards", label: "BI chart dashboards" }
+      { id: "user_metrics", label: "User Metrics" },
+      { id: "engagement_reports", label: "Engagement Reports" },
+      { id: "commerce_analytics", label: "Commerce Analytics" },
+      { id: "cohort_analysis", label: "Cohort Analysis" },
+      { id: "data_export", label: "Data Export" }
     ]
   },
   {
     sectionKey: "system_infrastructure_devops",
-    title: "10. Infrastructure & DevOps",
+    title: "Infrastructure & DevOps",
     features: [
-      { id: "api_monitoring", label: "API status monitoring" },
-      { id: "database_health", label: "Database health" },
-      { id: "storage_usage", label: "Cloud storage usage" },
-      { id: "background_jobs", label: "Background job queues" },
-      { id: "deployment_status", label: "Deployment status" }
+      { id: "api_monitor", label: "API Monitor" },
+      { id: "database_health", label: "Database Health" },
+      { id: "storage_usage", label: "Storage Usage" },
+      { id: "job_queues", label: "Job Queues" }
     ]
   },
   {
     sectionKey: "security_compliance_center",
-    title: "11. Security & Compliance",
+    title: "Security & Compliance",
     features: [
-      { id: "admin_activity_logs", label: "Admin activity logs" },
-      { id: "data_privacy_controls", label: "Data privacy controls" },
-      { id: "gdpr_youth_policies", label: "GDPR youth policies" },
-      { id: "api_key_management", label: "API key management" },
-      { id: "two_factor_authentication", label: "Two-factor security" }
+      { id: "admin_logs", label: "Admin Logs" },
+      { id: "privacy_controls", label: "Privacy Controls" },
+      { id: "policy_manager", label: "Policy Manager" },
+      { id: "api_keys", label: "API Keys" },
+      { id: "two_factor_auth", label: "Two-Factor Auth" }
     ]
   }
 ];

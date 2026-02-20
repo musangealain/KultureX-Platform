@@ -1,0 +1,580 @@
+@import url("https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap");
+
+.authPage {
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: #ececf3;
+  color: #1f2433;
+  font-family: "Montserrat", sans-serif;
+  font-size: 14px;
+}
+
+.authSplitCard {
+  width: min(676px, 100%);
+  min-height: 452px;
+  border: 1px solid #d2d6e3;
+  border-radius: 12px;
+  background: #ffffff;
+  display: grid;
+  grid-template-columns: 1.03fr 0.97fr;
+  overflow: hidden;
+  box-shadow: 0 10px 20px #34364d12;
+}
+
+.authPaneLeft {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  min-width: 0;
+  background: #ffffff;
+}
+
+.authPrimaryBlock {
+  padding: 30px 32px 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.authPrimaryBlock h1 {
+  margin: 0;
+  color: #171721;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.authForm {
+  display: grid;
+  gap: 8px;
+  width: min(100%, 286px);
+}
+
+.authForm .field + .field {
+  margin-top: -4px;
+}
+
+.field {
+  display: grid;
+  gap: 5px;
+}
+
+.field span {
+  color: #3f465c;
+  font-size: 12.5px;
+  font-weight: 500;
+  transition: color 120ms ease;
+}
+
+.field:focus-within span {
+  color: #5267e8;
+}
+
+.field input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid #cfd4df;
+  border-radius: 7px;
+  background: #f9fafe;
+  color: #1f2433;
+  padding: 0 11px;
+  font-family: "Montserrat", sans-serif;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.field input:focus {
+  outline: none;
+  border-color: #6a7df0;
+  box-shadow: 0 0 0 2px #dce2ff;
+  background: #ffffff;
+}
+
+.field input::placeholder {
+  color: #b1b7c8;
+}
+
+.passwordFieldShell {
+  display: grid;
+  grid-template-columns: 1fr 38px;
+  height: 34px;
+  border: 1px solid #cfd4df;
+  border-radius: 7px;
+  background: #f9fafe;
+  overflow: hidden;
+  transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+.passwordFieldShell:focus-within {
+  border-color: #6a7df0;
+  box-shadow: 0 0 0 2px #dce2ff;
+  background: #ffffff;
+}
+
+.passwordFieldShell input {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  height: 100%;
+  box-shadow: none;
+}
+
+.passwordFieldShell input:focus {
+  box-shadow: none;
+}
+
+.passwordToggle {
+  border: none;
+  border-left: 1px solid #d8dde7;
+  background: #f2f4fa;
+  color: #80879a;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: background-color 120ms ease;
+}
+
+.passwordToggle:hover {
+  background: #e9edf8;
+}
+
+.authInlineIcon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.authForgot {
+  width: fit-content;
+  border: none;
+  background: transparent;
+  color: #6f7488;
+  padding: 0;
+  margin-top: -1px;
+  font-size: 12.5px;
+  font-family: "Montserrat", sans-serif;
+  cursor: pointer;
+}
+
+.authForgot:hover {
+  color: #585e74;
+}
+
+.authCta {
+  margin-top: 3px;
+  height: 36px;
+  min-width: 104px;
+  width: fit-content;
+  justify-self: start;
+  padding: 0 24px;
+  border-radius: 999px;
+  border: 1px solid #c5cef8;
+  background: linear-gradient(180deg, #bfc8fa 0%, #aeb9f4 100%);
+  color: #f8f9ff;
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-family: "Montserrat", sans-serif;
+  cursor: not-allowed;
+  transition: background-color 160ms ease, box-shadow 160ms ease, transform 120ms ease, border-color 160ms ease;
+}
+
+.authCtaReady {
+  border-color: #6072f4;
+  background: linear-gradient(120deg, #6979f7 0%, #4d65eb 100%);
+  color: #ffffff;
+  box-shadow: 0 0 0 1px #8392fb, 0 10px 20px #596df540;
+  cursor: pointer;
+}
+
+.authCtaReady:hover:not(:disabled) {
+  background: linear-gradient(120deg, #5f71f7 0%, #435ce6 100%);
+  transform: translateY(-1px);
+}
+
+.authCta:disabled {
+  box-shadow: none;
+}
+
+.authSecondaryBlock {
+  border-top: 1px solid #d9dde8;
+  padding: 14px 32px 14px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  background: #ffffff;
+}
+
+.passkeyButton {
+  height: 34px;
+  width: 198px;
+  border: 1px solid #dde1ec;
+  border-radius: 999px;
+  background: #f2f4f9;
+  color: #20263a;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: "Montserrat", sans-serif;
+  cursor: pointer;
+  transition: background-color 120ms ease;
+}
+
+.passkeyButton:hover {
+  background: #ebeff8;
+}
+
+.authSecondaryBlock p {
+  margin: 0;
+  color: #555d72;
+  font-size: 12.5px;
+  line-height: 1.55;
+  max-width: 296px;
+}
+
+.authSecondaryBlock a {
+  color: #4d5572;
+}
+
+.authSecondaryBlock a:hover {
+  color: #373f5f;
+}
+
+.authPaneRight {
+  border-left: 1px solid #d9dde8;
+  background: #f4f5fa;
+  padding: 32px;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.authPaneRight h2 {
+  margin: 0;
+  color: #21283c;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.authPaneRight p {
+  margin: 0;
+  color: #515a71;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.authRewardCard {
+  min-height: 198px;
+  border-radius: 10px;
+  border: 1px solid #c9cddd;
+  background: linear-gradient(145deg, #b7b4c7 0%, #c3bfd3 48%, #b4b1c4 100%);
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  place-content: center;
+  gap: 14px;
+}
+
+.authRewardCard::before {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  background: repeating-radial-gradient(circle at center, #ffffff42 0 1px, transparent 1px 20px);
+  opacity: 0.68;
+}
+
+.authRewardCard::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1px;
+  height: 44px;
+  transform: translate(-50%, -50%);
+  background: #ffffffc2;
+}
+
+.authRewardCard span {
+  position: relative;
+  z-index: 1;
+  min-width: 120px;
+  height: 36px;
+  border: 1px solid #ffffffcc;
+  border-radius: 10px;
+  color: #ffffff;
+  background: #ffffff1f;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12.5px;
+}
+
+.authValueList {
+  display: grid;
+  gap: 8px;
+}
+
+.authValueItem {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.authValueDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #646a84;
+  box-shadow: 0 0 0 3px #dfe2ee;
+}
+
+.authValueItem p {
+  margin: 0;
+  color: #49506a;
+  font-size: 12.5px;
+}
+
+.disclosureLink {
+  border: none;
+  background: transparent;
+  color: #5d6684;
+  font-size: 12.5px;
+  justify-self: center;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.disclosureLink:hover {
+  color: #434b67;
+}
+
+.noticeError,
+.noticeInfo,
+.noticeSuccess {
+  margin: 0;
+  border: 1px solid #e2e3ea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #3f4354;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.authPaneLeft .noticeError,
+.authPaneLeft .noticeInfo,
+.authPaneLeft .noticeSuccess {
+  margin: 0 38px 20px;
+  font-size: 12.5px;
+}
+
+.authPasskeyPage {
+  min-height: 100vh;
+  margin: 0;
+  padding: 20px;
+  display: grid;
+  place-items: center;
+  background: #ececf3;
+  color: #1f2433;
+  font-family: "Montserrat", sans-serif;
+}
+
+.authPasskeyWrap {
+  position: relative;
+  width: min(454px, 100%);
+}
+
+.passkeyCard {
+  width: 100%;
+  min-height: 452px;
+  border: 1px solid #d4d8e4;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 38px 38px 30px;
+  display: grid;
+  gap: 15px;
+  box-shadow: 0 10px 20px #34364d12;
+}
+
+.passkeyCard h1 {
+  margin: 0;
+  color: #171721;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.passkeyIntro {
+  margin: 0;
+  color: #636a80;
+  font-size: 12px;
+  line-height: 1.5;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyTrustRow {
+  margin-top: 7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #3f475f;
+  font-size: 14px;
+}
+
+.passkeyTrustRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f67ea;
+}
+
+.passkeyPrimaryButton {
+  margin-top: 4px;
+  height: 40px;
+  width: fit-content;
+  min-width: 148px;
+  padding: 0 30px;
+  border: 1px solid #546ae9;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #6678f3 0%, #4c62e4 100%);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 8px 18px #5b6ff033;
+}
+
+.passkeyPrimaryButton:hover {
+  background: linear-gradient(120deg, #5a6ef0 0%, #4359db 100%);
+}
+
+.passkeyActionLinks {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.passkeyActionLinks button {
+  width: fit-content;
+  border: none;
+  background: transparent;
+  color: #4f67ea;
+  font-size: 12.5px;
+  padding: 0;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyActionLinks button:hover {
+  color: #4257d3;
+}
+
+.passkeyCodeForm {
+  margin-top: 4px;
+  display: grid;
+  gap: 10px;
+  width: min(100%, 332px);
+}
+
+.passkeyBackLink {
+  width: fit-content;
+  border: none;
+  background: transparent;
+  color: #4f67ea;
+  padding: 0;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyBackLink:hover {
+  color: #4257d3;
+}
+
+.passkeyCard .noticeError,
+.passkeyCard .noticeInfo,
+.passkeyCard .noticeSuccess {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.passkeySuccessText {
+  margin: 0;
+  color: #797c91;
+  font-size: 12.5px;
+  font-weight: 300;
+  line-height: 1.4;
+}
+
+.passkeyFooter {
+  position: absolute;
+  left: 50%;
+  bottom: -36px;
+  transform: translateX(-50%);
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.passkeyFooter button {
+  border: none;
+  background: transparent;
+  color: #20263a;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyFooter button:hover {
+  color: #3e4768;
+}
+
+.authCard {
+  width: min(420px, 100%);
+  border: 1px solid #d8dbe6;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 20px;
+  display: grid;
+  gap: 10px;
+}
+
+.authCard h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+@media (max-width: 980px) {
+  .authSplitCard {
+    grid-template-columns: 1fr;
+  }
+
+  .authPaneRight {
+    border-left: none;
+    border-top: 1px solid #d9dde8;
+    padding: 30px 28px;
+  }
+
+  .authPrimaryBlock,
+  .authSecondaryBlock {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .authPaneLeft .noticeError,
+  .authPaneLeft .noticeInfo,
+  .authPaneLeft .noticeSuccess {
+    margin-left: 28px;
+    margin-right: 28px;
+  }
+}
+

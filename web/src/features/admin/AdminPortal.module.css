@@ -35,6 +35,149 @@
   background: #ececf3;
 }
 
+.authPasskeyPage {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ececf3;
+  padding: 24px;
+}
+
+.authPasskeyWrap {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+}
+
+.passkeyCard {
+  width: min(454px, 100%);
+  border: 1px solid #d7d9e5;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 36px 38px 30px;
+  display: grid;
+  gap: 14px;
+}
+
+.passkeyCard h1 {
+  margin: 0;
+  color: #171721;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyIntro {
+  margin: 0;
+  color: #636a80;
+  font-size: 12px;
+  line-height: 1.45;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyTrustRow {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #3f475f;
+  font-size: 13px;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyTrustRow input {
+  width: 18px;
+  height: 18px;
+  accent-color: #4f67ea;
+}
+
+.passkeyPrimaryButton {
+  margin-top: 2px;
+  height: 40px;
+  width: fit-content;
+  min-width: 148px;
+  padding: 0 22px;
+  border: 1px solid #546ae9;
+  border-radius: 999px;
+  background: linear-gradient(120deg, #6678f3 0%, #4c62e4 100%);
+  color: #ffffff;
+  font-size: 12.5px;
+  font-weight: 700;
+  font-family: "Montserrat", sans-serif;
+  cursor: pointer;
+  box-shadow: 0 8px 18px #5b6ff033;
+}
+
+.passkeyPrimaryButton:hover {
+  background: linear-gradient(120deg, #5a6ef0 0%, #4359db 100%);
+}
+
+.passkeyActionLinks {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.passkeyActionLinks button {
+  width: fit-content;
+  border: none;
+  background: transparent;
+  color: #4f67ea;
+  font-size: 12.5px;
+  padding: 0;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyActionLinks button:hover {
+  color: #4257d3;
+}
+
+.passkeyCodeForm {
+  margin-top: 4px;
+  display: grid;
+  gap: 10px;
+  width: min(100%, 332px);
+}
+
+.passkeyBackLink {
+  width: fit-content;
+  border: none;
+  background: transparent;
+  color: #4f67ea;
+  padding: 0;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyBackLink:hover {
+  color: #4257d3;
+}
+
+.passkeyFooter {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+}
+
+.passkeyFooter button {
+  border: none;
+  background: transparent;
+  color: #20263a;
+  font-size: 12.5px;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.passkeyFooter button:hover {
+  color: #3e4768;
+}
+
 .authCard {
   width: min(420px, 100%);
   border: 1px solid #d8dbe6;
@@ -400,6 +543,13 @@
   font-size: 12.5px;
 }
 
+.passkeyCard .noticeError,
+.passkeyCard .noticeInfo,
+.passkeyCard .noticeSuccess {
+  margin: 0;
+  font-size: 12.5px;
+}
+
 .topbar {
   height: 68px;
   border-bottom: 1px solid var(--border);
@@ -679,6 +829,12 @@
   gap: 8px;
 }
 
+.panelFooter {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e7ebf0;
+}
+
 .panelItem {
   border: 1px solid #e7ebf0;
   border-radius: 10px;
@@ -727,6 +883,23 @@
 
 .panelAction:hover {
   background: var(--surface-soft);
+}
+
+.panelLogoutButton {
+  width: 100%;
+  height: 38px;
+  border: 1px solid #dddfea;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #3a4055;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: "Montserrat", sans-serif;
+}
+
+.panelLogoutButton:hover {
+  background: #f5f6fb;
 }
 
 .actionPrimary,

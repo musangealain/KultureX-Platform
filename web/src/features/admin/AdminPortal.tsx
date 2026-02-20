@@ -101,6 +101,8 @@ export default function AdminPortal() {
   const [challengeId, setChallengeId] = useState("");
   const [challengeHint, setChallengeHint] = useState("");
   const [twoFactorVerified, setTwoFactorVerified] = useState(false);
+  const [twoFactorMode, setTwoFactorMode] = useState<"passkey" | "code">("passkey");
+  const [trustDevice, setTrustDevice] = useState(true);
   const [openPanel, setOpenPanel] = useState<TopbarPanel | null>(null);
   const [globalSearch, setGlobalSearch] = useState("");
 
@@ -179,6 +181,7 @@ export default function AdminPortal() {
       localStorage.setItem(TOKEN_STORAGE_KEY, tokens.access);
       setToken(tokens.access);
       setPassword("");
+      setTwoFactorMode("passkey");
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Login failed.");
     } finally {
@@ -314,12 +317,40 @@ export default function AdminPortal() {
 
   if (me && !twoFactorVerified) {
     return (
-      <main className={styles.authPage}>
-        <section className={styles.authSplitCard}>
-          <div className={styles.authPaneLeft}>
-            <div className={styles.authPrimaryBlock}>
-              <h1>Authenticator</h1>
-              <form className={styles.authForm} onSubmit={handleVerifyTwoFactor}>
+      <main className={styles.authPasskeyPage}>
+        <div className={styles.authPasskeyWrap}>
+          <section className={styles.passkeyCard}>
+            <h1>Use a passkey</h1>
+            <p className={styles.passkeyIntro}>When you&apos;re ready to authenticate, click the button below.</p>
+
+            <label className={styles.passkeyTrustRow}>
+              <input type="checkbox" checked={trustDevice} onChange={(event) => setTrustDevice(event.target.checked)} />
+              <span>Trust this device for 30 days</span>
+            </label>
+
+            {twoFactorMode === "passkey" ? (
+              <>
+                <button type="button" className={styles.passkeyPrimaryButton} onClick={() => setTwoFactorMode("code")}>
+                  Use Passkey
+                </button>
+
+                <div className={styles.passkeyActionLinks}>
+                  <button type="button" onClick={() => setTwoFactorMode("code")}>
+                    Use 2FA code instead
+                  </button>
+                  <button type="button" onClick={() => setTwoFactorMode("code")}>
+                    Use backup code instead
+                  </button>
+                  <button type="button" onClick={() => token && startTwoFactorFlow(token)}>
+                    Reset two-factor authentication
+                  </button>
+                  <button type="button" onClick={handleLogout}>
+                    Go back to login
+                  </button>
+                </div>
+              </>
+            ) : (
+              <form className={styles.passkeyCodeForm} onSubmit={handleVerifyTwoFactor}>
                 <label className={styles.field}>
                   <span>Verification code</span>
                   <input
@@ -337,31 +368,28 @@ export default function AdminPortal() {
                   className={`${styles.authCta} ${verifyReady ? styles.authCtaReady : ""}`}
                   disabled={!verifyReady || saving}
                 >
-                  {saving ? "Verifying..." : "Verify"}
+                  {saving ? "Verifying..." : "Verify code"}
+                </button>
+                <button type="button" className={styles.passkeyBackLink} onClick={() => setTwoFactorMode("passkey")}>
+                  Use passkey instead
+                </button>
+                <button type="button" className={styles.passkeyBackLink} onClick={handleLogout}>
+                  Go back to login
                 </button>
               </form>
-            </div>
-
-            <div className={styles.authSecondaryBlock}>
-              <button type="button" className={styles.passkeyButton} onClick={() => token && startTwoFactorFlow(token)}>
-                Resend code
-              </button>
-              <p>
-                Having trouble receiving a code?{" "}
-                <a href="#" onClick={(event) => {
-                  event.preventDefault();
-                  handleLogout();
-                }}>
-                  Cancel and sign in again
-                </a>
-              </p>
-            </div>
+            )}
 
             {error ? <p className={styles.noticeError}>{error}</p> : null}
             {success ? <p className={styles.noticeSuccess}>{success}</p> : null}
+          </section>
+
+          <div className={styles.passkeyFooter}>
+            <button type="button">Passkey guide</button>
+            <button type="button" onClick={handleLogout}>
+              Unable to log in?
+            </button>
           </div>
-          <AuthShowcasePanel mode="verify" />
-        </section>
+        </div>
       </main>
     );
   }
@@ -478,9 +506,6 @@ export default function AdminPortal() {
             <span className={styles.profileName}>{displayName}</span>
             <span className={styles.profileCaret}>v</span>
           </button>
-          <button type="button" className={styles.actionPrimary} onClick={handleLogout}>
-            Logout
-          </button>
         </div>
       </header>
 
@@ -558,6 +583,11 @@ export default function AdminPortal() {
                 {action}
               </button>
             ))}
+          </div>
+          <div className={styles.panelFooter}>
+            <button type="button" className={styles.panelLogoutButton} onClick={handleLogout}>
+              Logout
+            </button>
           </div>
         </section>
       ) : null}

@@ -9,6 +9,7 @@ import AdminTwoFactorView from "./components/AdminTwoFactorView";
 import {
   DASHBOARD_SECTIONS,
   DEFAULT_ANALYTICS,
+  SIDEBAR_GROUPS,
   type DashboardSectionKey,
   type ModuleTrend,
   type QuickStat,
@@ -29,6 +30,10 @@ import {
 } from "./api";
 
 export default function AdminPortal() {
+  const defaultSidebarGroup = SIDEBAR_GROUPS[0];
+  const defaultSectionKey: DashboardSectionKey = defaultSidebarGroup?.sectionKey ?? "master_dashboard";
+  const defaultFeature: SidebarFeature | null = defaultSidebarGroup?.features[0] ?? null;
+
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<AdminUser | null>(null);
   const [loading, setLoading] = useState(false);
@@ -49,9 +54,9 @@ export default function AdminPortal() {
   const [openPanel, setOpenPanel] = useState<TopbarPanel | null>(null);
   const [globalSearch, setGlobalSearch] = useState("");
 
-  const [activeSectionKey, setActiveSectionKey] = useState<DashboardSectionKey>("master_dashboard");
-  const [activeSidebarFeature, setActiveSidebarFeature] = useState<SidebarFeature | null>(null);
-  const [pinnedSidebarGroup, setPinnedSidebarGroup] = useState<DashboardSectionKey | null>(null);
+  const [activeSectionKey, setActiveSectionKey] = useState<DashboardSectionKey>(defaultSectionKey);
+  const [activeSidebarFeature, setActiveSidebarFeature] = useState<SidebarFeature | null>(defaultFeature);
+  const [pinnedSidebarGroup, setPinnedSidebarGroup] = useState<DashboardSectionKey | null>(defaultSectionKey);
 
   const [analytics, setAnalytics] = useState<AdminAnalytics>(DEFAULT_ANALYTICS);
   const [metricsLoading, setMetricsLoading] = useState(false);
@@ -180,9 +185,9 @@ export default function AdminPortal() {
     setToken(null);
     setMe(null);
     setTwoFactorVerified(false);
-    setActiveSectionKey("master_dashboard");
-    setActiveSidebarFeature(null);
-    setPinnedSidebarGroup(null);
+    setActiveSectionKey(defaultSectionKey);
+    setActiveSidebarFeature(defaultFeature);
+    setPinnedSidebarGroup(defaultSectionKey);
     setAnalytics(DEFAULT_ANALYTICS);
     setMetricsError("");
     setError("");
@@ -361,10 +366,10 @@ export default function AdminPortal() {
       recentActivity={RECENT_ACTIVITY}
       onGlobalSearchChange={setGlobalSearch}
       onTogglePanel={togglePanel}
+      onClosePanel={() => setOpenPanel(null)}
       onRefreshSnapshot={() => loadDashboardMetrics().catch(() => null)}
       onToggleSidebarGroup={toggleSidebarGroup}
       onFeatureSelect={handleFeatureSelect}
-      onClearSelection={() => setActiveSidebarFeature(null)}
       onLogout={handleLogout}
     />
   );

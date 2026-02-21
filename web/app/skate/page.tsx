@@ -1,3 +1,5 @@
+import styles from "@/features/culture/pages.module.css";
+import CultureLayout from "@/features/culture/components/CultureLayout";
 import { getSkateVideos, type SkateVideo } from "@/features/skate/api";
 
 type SceneClip = {
@@ -46,58 +48,39 @@ function normalizeClips(videos: SkateVideo[]): SceneClip[] {
   }));
 }
 
-const skateUXNodes = [
-  "Spot cards with map pin, terrain type, and community safety notes.",
-  "Clip pages with trick tags and creator attribution overlays.",
-  "Crew pages linking directly to events and shop collabs.",
-  "One-tap upload route for authenticated creators."
-];
-
 export default async function SkatePage() {
   const fetched = await getSkateVideos().catch(() => []);
   const clips = normalizeClips(fetched);
 
   return (
-    <section className="stack">
-      <section className="section reveal">
-        <span className="eyebrow">Skate Culture / Clips + Spots</span>
-        <h1 className="page-title">Capture the motion language of every crew and street line.</h1>
-        <p className="page-subtitle">
-          Skate pages combine media clips, location context, and creator identity into one searchable scene archive.
-        </p>
-      </section>
-
-      <section className="section reveal d1">
-        <header className="section-head">
-          <h2>Featured Clips</h2>
-          <p>Dummy content mirrors realistic skate publishing from local community crews.</p>
+    <CultureLayout
+      activeNav="skate"
+      eyebrow="Skate / Clips + Spots"
+      title="Capture the motion language of every crew and street line."
+      subtitle="Skate pages combine media clips, location context, and creator identity into one searchable scene archive."
+    >
+      <section className={styles.section}>
+        <header className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Featured Clips</h2>
+            <p className={styles.sectionMeta}>Skate video cards modeled in the same visual system.</p>
+          </div>
         </header>
-        <div className="cards-auto">
-          {clips.map((clip, index) => (
-            <article key={clip.id} className={`glass-card reveal d${(index % 3) + 1}`}>
-              <span className="card-label cyan">{clip.crew}</span>
-              <h3 className="card-title">{clip.title}</h3>
-              <p className="card-copy">{clip.caption}</p>
-              <p className="card-meta">Spot: {clip.location}</p>
+
+        <div className={`${styles.grid} ${styles.gridThree}`}>
+          {clips.map((clip) => (
+            <article key={clip.id} className={styles.card}>
+              <span className={styles.chip}>{clip.crew}</span>
+              <h3 className={styles.cardTitle}>{clip.title}</h3>
+              <p className={styles.cardCopy}>{clip.caption}</p>
+              <div className={styles.metaRow}>
+                <span>Spot</span>
+                <span>{clip.location}</span>
+              </div>
             </article>
           ))}
         </div>
       </section>
-
-      <section className="section reveal d2">
-        <header className="section-head">
-          <h2>Skate Experience Pattern</h2>
-          <p>How clip, crew, and spot content should connect in production.</p>
-        </header>
-        <ul className="timeline">
-          {skateUXNodes.map((item) => (
-            <li key={item}>
-              <strong>Scene Layer</strong>
-              <span>{item}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </section>
+    </CultureLayout>
   );
 }

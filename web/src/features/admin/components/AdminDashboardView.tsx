@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import styles from "../styles/admin-dashboard.module.css";
 import {
   MESSAGE_ITEMS,
   NOTIFICATION_ITEMS,
-  PROFILE_ACTIONS,
   RESOURCE_LINKS,
   SETTINGS_SHORTCUTS,
   SIDEBAR_GROUPS,
@@ -18,6 +17,8 @@ import {
   type SidebarFeature,
   type TopbarPanel
 } from "../config/dashboard";
+import { buildSubdashboardFrame } from "../subdashboards/registry";
+import { resolveSubdashboardLayoutClass } from "../subdashboards/style-registry";
 
 type AdminDashboardViewProps = {
   displayName: string;
@@ -37,10 +38,10 @@ type AdminDashboardViewProps = {
   recentActivity: string[];
   onGlobalSearchChange: (value: string) => void;
   onTogglePanel: (panel: TopbarPanel) => void;
+  onClosePanel: () => void;
   onRefreshSnapshot: () => void;
   onToggleSidebarGroup: (sectionKey: DashboardSectionKey) => void;
   onFeatureSelect: (sectionKey: DashboardSectionKey, feature: SidebarFeature) => void;
-  onClearSelection: () => void;
   onLogout: () => void;
 };
 
@@ -201,13 +202,54 @@ export default function AdminDashboardView({
   recentActivity,
   onGlobalSearchChange,
   onTogglePanel,
+  onClosePanel,
   onRefreshSnapshot,
   onToggleSidebarGroup,
   onFeatureSelect,
-  onClearSelection,
   onLogout
 }: AdminDashboardViewProps) {
   const sidebarScrollRef = useRef<HTMLDivElement | null>(null);
+  const closePanelTimerRef = useRef<number | null>(null);
+  const [closingPanel, setClosingPanel] = useState<TopbarPanel | null>(null);
+  const isSubdashboardView = Boolean(activeSidebarFeature);
+  const subdashboardFrame =
+    isSubdashboardView && activeSidebarFeature ? buildSubdashboardFrame(activeSection, activeSidebarFeature) : null;
+  const legacyLayoutClass = subdashboardFrame ? (styles[subdashboardFrame.layoutClass] ?? "") : "";
+  const subdashboardLayoutClass =
+    isSubdashboardView && activeSidebarFeature
+      ? resolveSubdashboardLayoutClass(activeSection.key, activeSidebarFeature.id) ??
+        legacyLayoutClass
+      : "";
+
+  function clearClosePanelTimer() {
+    if (closePanelTimerRef.current !== null) {
+      window.clearTimeout(closePanelTimerRef.current);
+      closePanelTimerRef.current = null;
+    }
+  }
+
+  function cancelPanelClose() {
+    clearClosePanelTimer();
+    setClosingPanel(null);
+  }
+
+  function scheduleClosePanel() {
+    clearClosePanelTimer();
+    if (!openPanel) {
+      return;
+    }
+    setClosingPanel(openPanel);
+    closePanelTimerRef.current = window.setTimeout(() => {
+      onClosePanel();
+      setClosingPanel(null);
+      closePanelTimerRef.current = null;
+    }, 220);
+  }
+
+  function handlePanelToggle(panel: TopbarPanel) {
+    cancelPanelClose();
+    onTogglePanel(panel);
+  }
 
   useEffect(() => {
     if (!pinnedSidebarGroup) {
@@ -241,9 +283,21 @@ export default function AdminDashboardView({
     return () => window.clearTimeout(timer);
   }, [pinnedSidebarGroup]);
 
+  useEffect(
+    () => () => {
+      clearClosePanelTimer();
+    },
+    []
+  );
+
+  const showNotificationsPanel = openPanel === "notifications" || closingPanel === "notifications";
+  const showMessagesPanel = openPanel === "messages" || closingPanel === "messages";
+  const showSettingsPanel = openPanel === "settings" || closingPanel === "settings";
+  const showProfilePanel = openPanel === "profile" || closingPanel === "profile";
+
   return (
     <main className={styles.dashboardPage}>
-      <header className={styles.topbar}>
+      <header className={styles.topbar} onMouseEnter={cancelPanelClose} onMouseLeave={scheduleClosePanel}>
         <div className={styles.topbarSearchWrap}>
           <label className={styles.searchShell}>
             <span className={styles.searchIcon} aria-hidden="true">
@@ -266,86 +320,342 @@ export default function AdminDashboardView({
               aria-label="Global search"
               value={globalSearch}
               onChange={(event) => onGlobalSearchChange(event.target.value)}
+              onFocus={() => {
+                cancelPanelClose();
+                onClosePanel();
+              }}
+              onMouseDown={() => {
+                cancelPanelClose();
+                onClosePanel();
+              }}
             />
             <kbd className={styles.searchShortcut}>Ctrl+K</kbd>
           </label>
         </div>
 
         <div className={styles.topbarActions}>
-          <button type="button" className={styles.actionGhost}>
-            Quick Action
-          </button>
+          <div className={styles.topbarPanelAnchor}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="Notifications"
+              aria-expanded={openPanel === "notifications"}
+              onClick={() => handlePanelToggle("notifications")}
+            >
+              <svg viewBox="0 0 24 24" className={styles.iconSvg}>
+                <path
+                  d="M9 18h6m-6 0a3 3 0 1 0 6 0m4-1H5l1.2-1.2c.5-.5.8-1.2.8-1.9V11a5 5 0 1 1 10 0v2.9c0 .7.3 1.4.8 1.9L19 17z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {unreadNotifications > 0 ? <span className={styles.iconBadge}>{unreadNotifications}</span> : null}
+            </button>
 
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Notifications"
-            aria-expanded={openPanel === "notifications"}
-            onClick={() => onTogglePanel("notifications")}
-          >
-            <svg viewBox="0 0 24 24" className={styles.iconSvg}>
-              <path
-                d="M9 18h6m-6 0a3 3 0 1 0 6 0m4-1H5l1.2-1.2c.5-.5.8-1.2.8-1.9V11a5 5 0 1 1 10 0v2.9c0 .7.3 1.4.8 1.9L19 17z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            {unreadNotifications > 0 ? <span className={styles.iconBadge}>{unreadNotifications}</span> : null}
-          </button>
+            {showNotificationsPanel ? (
+              <section
+                className={`${styles.floatingPanel} ${styles.menuFloatingPanel} ${
+                  closingPanel === "notifications" ? styles.panelClosing : ""
+                }`}
+              >
+                <div className={styles.menuPanelHeader}>
+                  <h2>Notifications</h2>
+                  <button type="button" className={styles.panelLink}>
+                    Mark all read
+                  </button>
+                </div>
+                <div className={styles.menuPanelGroup}>
+                  {NOTIFICATION_ITEMS.map((item) => (
+                    <article key={item.title} className={styles.menuPanelCard}>
+                      <div className={styles.menuPanelCardTop}>
+                        <strong>{item.title}</strong>
+                        <span>{item.time}</span>
+                      </div>
+                      <p>{item.detail}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
 
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Messages"
-            aria-expanded={openPanel === "messages"}
-            onClick={() => onTogglePanel("messages")}
-          >
-            <svg viewBox="0 0 24 24" className={styles.iconSvg}>
-              <path
-                d="M4 6h16v9H7l-3 3V6z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className={styles.iconBadgeMuted}>{MESSAGE_ITEMS.length}</span>
-          </button>
+          <div className={styles.topbarPanelAnchor}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="Messages"
+              aria-expanded={openPanel === "messages"}
+              onClick={() => handlePanelToggle("messages")}
+            >
+              <svg viewBox="0 0 24 24" className={styles.iconSvg}>
+                <path
+                  d="M4 6h16v9H7l-3 3V6z"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className={styles.iconBadgeMuted}>{MESSAGE_ITEMS.length}</span>
+            </button>
 
-          <button
-            type="button"
-            className={styles.iconButton}
-            aria-label="Settings"
-            aria-expanded={openPanel === "settings"}
-            onClick={() => onTogglePanel("settings")}
-          >
-            <svg viewBox="0 0 24 24" className={styles.iconSvg}>
-              <path
-                d="M12 8.2a3.8 3.8 0 1 1 0 7.6a3.8 3.8 0 0 1 0-7.6zm8 3.8l-2 1l.2 2.3l-2.1 1.2l-1.7-1.5l-2.1.8l-.8 2.2H9.5l-.8-2.2l-2.1-.8l-1.7 1.5L2.8 15.3L3 13l-2-1l2-1l-.2-2.3l2.1-1.2l1.7 1.5l2.1-.8l.8-2.2h2.9l.8 2.2l2.1.8l1.7-1.5L18.2 8.7L18 11l2 1z"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+            {showMessagesPanel ? (
+              <section
+                className={`${styles.floatingPanel} ${styles.menuFloatingPanel} ${
+                  closingPanel === "messages" ? styles.panelClosing : ""
+                }`}
+              >
+                <div className={styles.menuPanelHeader}>
+                  <h2>Messages</h2>
+                  <button type="button" className={styles.panelLink}>
+                    Open inbox
+                  </button>
+                </div>
+                <div className={styles.menuPanelGroup}>
+                  {MESSAGE_ITEMS.map((item) => (
+                    <article key={`${item.from}-${item.time}`} className={styles.menuPanelCard}>
+                      <div className={styles.menuPanelCardTop}>
+                        <strong>{item.from}</strong>
+                        <span>{item.time}</span>
+                      </div>
+                      <p>{item.preview}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
 
-          <button
-            type="button"
-            className={styles.profileMenu}
-            aria-label="User profile menu"
-            aria-expanded={openPanel === "profile"}
-            onClick={() => onTogglePanel("profile")}
-          >
-            <span className={styles.profileAvatar}>{initials}</span>
-            <span className={styles.profileName}>{displayName}</span>
-            <span className={styles.profileCaret}>v</span>
-          </button>
+          <div className={styles.topbarPanelAnchor}>
+            <button
+              type="button"
+              className={styles.iconButton}
+              aria-label="Settings"
+              aria-expanded={openPanel === "settings"}
+              onClick={() => handlePanelToggle("settings")}
+            >
+              <svg viewBox="0 0 24 24" className={styles.iconSvg}>
+                <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path
+                  d="M12 3.8v2.1M12 18.1v2.1M4.4 12h2.1M17.5 12h2.1M6.3 6.3l1.5 1.5M16.2 16.2l1.5 1.5M17.7 6.3l-1.5 1.5M7.8 16.2l-1.5 1.5"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+
+            {showSettingsPanel ? (
+              <section
+                className={`${styles.floatingPanel} ${styles.menuFloatingPanel} ${
+                  closingPanel === "settings" ? styles.panelClosing : ""
+                }`}
+              >
+                <div className={styles.menuPanelHeader}>
+                  <h2>Settings</h2>
+                  <button type="button" className={styles.panelLink}>
+                    Open settings
+                  </button>
+                </div>
+                <div className={styles.menuPanelGroup}>
+                  {SETTINGS_SHORTCUTS.map((setting) => (
+                    <button key={setting} type="button" className={styles.menuPanelRow}>
+                      <span className={styles.menuPanelRowLead}>
+                        <span className={styles.menuPanelRowIcon} aria-hidden="true">
+                          <svg viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" strokeWidth="2" />
+                            <path
+                              d="M12 3.8v2.1M12 18.1v2.1M4.4 12h2.1M17.5 12h2.1M6.3 6.3l1.5 1.5M16.2 16.2l1.5 1.5M17.7 6.3l-1.5 1.5M7.8 16.2l-1.5 1.5"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </span>
+                        <span>{setting}</span>
+                      </span>
+                      <span className={styles.menuPanelRowTail} aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M9 6l6 6l-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+          </div>
+
+          <div className={styles.topbarPanelAnchor}>
+            <button
+              type="button"
+              className={styles.profileMenu}
+              aria-label="User profile menu"
+              aria-expanded={openPanel === "profile"}
+              onClick={() => handlePanelToggle("profile")}
+            >
+              <span className={styles.profileAvatar}>{initials}</span>
+              <span className={styles.profileMeta}>
+                <span className={styles.profileName}>{displayName}</span>
+                <span className={styles.profileRoleInline}>Admin</span>
+              </span>
+              <span className={styles.profileCaret} aria-hidden="true">
+                <svg viewBox="0 0 24 24" className={styles.iconSvg}>
+                  <path
+                    d="M7 10l5 5l5-5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+            </button>
+
+            {showProfilePanel ? (
+              <section
+                className={`${styles.floatingPanel} ${styles.profileFloatingPanel} ${
+                  closingPanel === "profile" ? styles.panelClosing : ""
+                }`}
+              >
+                <div className={styles.profilePanelHeaderRow}>
+                  <span className={styles.profilePanelAvatar}>{initials}</span>
+                  <span className={styles.profilePanelIdentity}>
+                    <strong>{displayName}</strong>
+                    <small>Administrator</small>
+                  </span>
+                  <span className={styles.profilePanelHeaderCaret} aria-hidden="true">
+                    <svg viewBox="0 0 24 24" className={styles.iconSvg}>
+                      <path
+                        d="M7 10l5 5l5-5"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                </div>
+
+                <div className={styles.profilePanelGroup}>
+                  <button type="button" className={styles.profilePanelRow}>
+                    <span className={styles.profilePanelRowLead}>
+                      <span className={styles.profilePanelRowIcon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d="M12 8.2a3.8 3.8 0 1 1 0 7.6a3.8 3.8 0 0 1 0-7.6zm8 3.8l-2 1l.2 2.3l-2.1 1.2l-1.7-1.5l-2.1.8l-.8 2.2H9.5l-.8-2.2l-2.1-.8l-1.7 1.5L2.8 15.3L3 13l-2-1l2-1l-.2-2.3l2.1-1.2l1.7 1.5l2.1-.8l.8-2.2h2.9l.8 2.2l2.1.8l1.7-1.5L18.2 8.7L18 11l2 1z"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <span>Settings</span>
+                    </span>
+                  </button>
+
+                  <button type="button" className={styles.profilePanelRow}>
+                    <span className={styles.profilePanelRowLead}>
+                      <span className={styles.profilePanelRowIcon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d="M3 8.5L12 4l9 4.5L12 13L3 8.5zm0 7L12 20l9-4.5"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <span>Switch to sandbox</span>
+                    </span>
+                    <span className={styles.profilePanelRowTail} aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M9 6l6 6l-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+
+                <div className={styles.profilePanelDivider} />
+
+                <div className={styles.profilePanelGroup}>
+                  <button type="button" className={styles.profilePanelRow}>
+                    <span className={styles.profilePanelRowLead}>
+                      <span className={`${styles.profilePanelRowIcon} ${styles.profilePanelWorkspaceBadge}`}>K</span>
+                      <span>KultureX Master Workspace</span>
+                    </span>
+                  </button>
+
+                  <button type="button" className={styles.profilePanelRow}>
+                    <span className={styles.profilePanelRowLead}>
+                      <span className={styles.profilePanelRowIcon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </span>
+                      <span>Create</span>
+                    </span>
+                    <span className={styles.profilePanelRowTail} aria-hidden="true">
+                      <svg viewBox="0 0 24 24">
+                        <path d="M9 6l6 6l-6 6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+
+                <div className={styles.profilePanelDivider} />
+
+                <div className={styles.profilePanelGroup}>
+                  <button type="button" className={styles.profilePanelRow}>
+                    <span className={styles.profilePanelRowLead}>
+                      <span className={styles.profilePanelRowIcon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d="M12 12a4 4 0 1 0 0-8a4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.8"
+                            strokeLinecap="round"
+                          />
+                        </svg>
+                      </span>
+                      <span>{displayName}</span>
+                    </span>
+                  </button>
+
+                  <button type="button" className={`${styles.profilePanelRow} ${styles.profilePanelSignOut}`} onClick={onLogout}>
+                    <span className={styles.profilePanelRowLead}>
+                      <span className={styles.profilePanelRowIcon} aria-hidden="true">
+                        <svg viewBox="0 0 24 24">
+                          <path
+                            d="M9 5H5v14h4M13 8l4 4l-4 4M7 12h10"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.9"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <span>Sign out</span>
+                    </span>
+                  </button>
+                </div>
+              </section>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -422,33 +732,44 @@ export default function AdminDashboardView({
           </div>
         </aside>
 
-        <section className={styles.dashboardWorkspace}>
-          <header className={styles.workspaceHeader}>
-            <div className={styles.workspaceTitleBlock}>
-              <p className={styles.workspaceEyebrow}>{activeSection.group}</p>
-              <h1>{activeSection.title}</h1>
-              <p>{activeSection.summary}</p>
-            </div>
-            <div className={styles.workspaceActions}>
-              <button type="button" className={styles.actionPrimary} onClick={onRefreshSnapshot}>
-                {metricsLoading ? "Refreshing..." : "Refresh Snapshot"}
-              </button>
-              <button type="button" className={styles.actionGhost}>
-                Export Snapshot
-              </button>
-            </div>
-          </header>
+        <section className={`${styles.dashboardWorkspace} ${isSubdashboardView ? styles.dashboardWorkspaceShell : ""}`}>
+          {!isSubdashboardView ? (
+            <header className={styles.workspaceHeader}>
+              <div className={styles.workspaceTitleBlock}>
+                <p className={styles.workspaceEyebrow}>{activeSection.group}</p>
+                <h1>{activeSection.title}</h1>
+                <p>{activeSection.summary}</p>
+              </div>
+              <div className={styles.workspaceActions}>
+                <button type="button" className={styles.actionPrimary} onClick={onRefreshSnapshot}>
+                  {metricsLoading ? "Refreshing..." : "Refresh Snapshot"}
+                </button>
+                <button type="button" className={styles.actionGhost}>
+                  Export Snapshot
+                </button>
+              </div>
+            </header>
+          ) : null}
 
-          {metricsError ? <p className={`${styles.noticeInfo} ${styles.workspaceNotice}`}>{metricsError}</p> : null}
+          {!isSubdashboardView && metricsError ? (
+            <p className={`${styles.noticeInfo} ${styles.workspaceNotice}`}>{metricsError}</p>
+          ) : null}
 
-          {activeSidebarFeature ? (
-            <section className={`${styles.surfaceCard} ${styles.featurePlaceholderCard}`}>
-              <p className={styles.featurePlaceholderHash}>#</p>
-              <h2 className={styles.featurePlaceholderTitle}>{activeSidebarFeature.label}</h2>
-              <p className={styles.featurePlaceholderMeta}>Phase 1 placeholder view. Detailed page comes in next phase.</p>
-              <button type="button" className={styles.actionGhost} onClick={onClearSelection}>
-                Clear Selection
-              </button>
+          {isSubdashboardView && subdashboardFrame ? (
+            <section className={styles.subdashboardShell}>
+              <header className={styles.subdashboardHeader}>
+                <p>{activeSection.navLabel}</p>
+                <h2>{subdashboardFrame.headerTitle}</h2>
+                <span>{subdashboardFrame.headerMeta}</span>
+              </header>
+
+              <div className={`${styles.subdashboardGrid} ${subdashboardLayoutClass}`}>
+                {subdashboardFrame.tiles.map((tile) => (
+                  <section key={tile.id} className={styles.subdashboardBox} style={{ gridArea: tile.area }}>
+                    <h3>{tile.title}</h3>
+                  </section>
+                ))}
+              </div>
             </section>
           ) : (
             <>
@@ -576,144 +897,64 @@ export default function AdminDashboardView({
           )}
         </section>
 
-        <aside className={styles.dashboardRail}>
-          <section className={styles.railCard}>
-            <h2>System Health</h2>
-            <div className={styles.metricList}>
-              <article className={styles.metricRow}>
-                <div>
-                  <strong>API status</strong>
-                  <p>All gateways healthy</p>
-                </div>
-                <span className={styles.trendUp}>99.95%</span>
-              </article>
-              <article className={styles.metricRow}>
-                <div>
-                  <strong>Queue pressure</strong>
-                  <p>Background jobs</p>
-                </div>
-                <span className={styles.trendStable}>46</span>
-              </article>
-              <article className={styles.metricRow}>
-                <div>
-                  <strong>Deploy safety</strong>
-                  <p>Last production release</p>
-                </div>
-                <span className={styles.trendUp}>Clean</span>
-              </article>
-            </div>
-          </section>
+        {!isSubdashboardView ? (
+          <aside className={styles.dashboardRail}>
+            <section className={styles.railCard}>
+              <h2>System Health</h2>
+              <div className={styles.metricList}>
+                <article className={styles.metricRow}>
+                  <div>
+                    <strong>API status</strong>
+                    <p>All gateways healthy</p>
+                  </div>
+                  <span className={styles.trendUp}>99.95%</span>
+                </article>
+                <article className={styles.metricRow}>
+                  <div>
+                    <strong>Queue pressure</strong>
+                    <p>Background jobs</p>
+                  </div>
+                  <span className={styles.trendStable}>46</span>
+                </article>
+                <article className={styles.metricRow}>
+                  <div>
+                    <strong>Deploy safety</strong>
+                    <p>Last production release</p>
+                  </div>
+                  <span className={styles.trendUp}>Clean</span>
+                </article>
+              </div>
+            </section>
 
-          <section className={styles.railCard}>
-            <h2>Priority Actions</h2>
-            <div className={styles.railActions}>
-              <button type="button" className={styles.actionPrimary}>
-                Publish Alert
-              </button>
-              <button type="button" className={styles.actionGhost}>
-                Create Event
-              </button>
-              <button type="button" className={styles.actionGhost}>
-                Review Reports
-              </button>
-            </div>
-          </section>
-
-          <section className={styles.railCard}>
-            <h2>Resources</h2>
-            <div className={styles.resourceList}>
-              {RESOURCE_LINKS.map((item) => (
-                <button key={item} type="button" className={styles.panelAction}>
-                  {item}
+            <section className={styles.railCard}>
+              <h2>Priority Actions</h2>
+              <div className={styles.railActions}>
+                <button type="button" className={styles.actionPrimary}>
+                  Publish Alert
                 </button>
-              ))}
-            </div>
-          </section>
-        </aside>
+                <button type="button" className={styles.actionGhost}>
+                  Create Event
+                </button>
+                <button type="button" className={styles.actionGhost}>
+                  Review Reports
+                </button>
+              </div>
+            </section>
+
+            <section className={styles.railCard}>
+              <h2>Resources</h2>
+              <div className={styles.resourceList}>
+                {RESOURCE_LINKS.map((item) => (
+                  <button key={item} type="button" className={styles.panelAction}>
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </section>
+          </aside>
+        ) : null}
       </div>
 
-      {openPanel === "notifications" ? (
-        <section className={styles.floatingPanel}>
-          <div className={styles.floatingPanelHead}>
-            <h2>Notifications</h2>
-            <button type="button" className={styles.panelLink}>
-              Mark all read
-            </button>
-          </div>
-          <div className={styles.panelList}>
-            {NOTIFICATION_ITEMS.map((item) => (
-              <article key={item.title} className={styles.panelItem}>
-                <div className={styles.panelItemTop}>
-                  <strong>{item.title}</strong>
-                  <span>{item.time}</span>
-                </div>
-                <p>{item.detail}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {openPanel === "messages" ? (
-        <section className={styles.floatingPanel}>
-          <div className={styles.floatingPanelHead}>
-            <h2>Messages</h2>
-            <button type="button" className={styles.panelLink}>
-              Open inbox
-            </button>
-          </div>
-          <div className={styles.panelList}>
-            {MESSAGE_ITEMS.map((item) => (
-              <article key={`${item.from}-${item.time}`} className={styles.panelItem}>
-                <div className={styles.panelItemTop}>
-                  <strong>{item.from}</strong>
-                  <span>{item.time}</span>
-                </div>
-                <p>{item.preview}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {openPanel === "settings" ? (
-        <section className={styles.floatingPanel}>
-          <div className={styles.floatingPanelHead}>
-            <h2>Settings</h2>
-            <button type="button" className={styles.panelLink}>
-              Open settings
-            </button>
-          </div>
-          <div className={styles.panelList}>
-            {SETTINGS_SHORTCUTS.map((setting) => (
-              <button key={setting} type="button" className={styles.panelAction}>
-                {setting}
-              </button>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      {openPanel === "profile" ? (
-        <section className={styles.floatingPanel}>
-          <div className={styles.floatingPanelHead}>
-            <h2>{displayName}</h2>
-            <span className={styles.profileRole}>Administrator</span>
-          </div>
-          <div className={styles.panelList}>
-            {PROFILE_ACTIONS.map((action) => (
-              <button key={action} type="button" className={styles.panelAction}>
-                {action}
-              </button>
-            ))}
-          </div>
-          <div className={styles.panelFooter}>
-            <button type="button" className={styles.panelLogoutButton} onClick={onLogout}>
-              Logout
-            </button>
-          </div>
-        </section>
-      ) : null}
     </main>
   );
 }

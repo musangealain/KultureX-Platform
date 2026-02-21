@@ -1,118 +1,88 @@
-import { getProfiles, type CreatorProfile } from "@/features/community/api";
+import Link from "next/link";
+import styles from "@/features/culture/pages.module.css";
+import { getCommunityFeedMvp, getCreatorCardsMvp } from "@/features/community/mvp";
+import CultureLayout from "@/features/culture/components/CultureLayout";
 
-type CommunityCard = {
-  id: number;
-  name: string;
-  tagline: string;
-  discipline: string;
-  handle: string;
-  vibe: string;
-};
-
-const seededCommunity: CommunityCard[] = [
-  {
-    id: 6101,
-    name: "Nia Volt",
-    tagline: "Documenting rooftop sessions and midnight rails across the city.",
-    discipline: "Street Skate",
-    handle: "@niavolt",
-    vibe: "Motion Director"
-  },
-  {
-    id: 6102,
-    name: "Kairo Lane",
-    tagline: "Building capsule collections inspired by deck graphics and city signage.",
-    discipline: "Fashion Design",
-    handle: "@kairolane",
-    vibe: "Brand Architect"
-  },
-  {
-    id: 6103,
-    name: "Mara Flux",
-    tagline: "Capturing creator interviews and local crew documentaries.",
-    discipline: "Editorial",
-    handle: "@maraflux",
-    vibe: "Story Producer"
-  },
-  {
-    id: 6104,
-    name: "Juno Grid",
-    tagline: "Runs event ops, ticket drops, and community meetups.",
-    discipline: "Event Ops",
-    handle: "@junogrid",
-    vibe: "Scene Organizer"
+function feedChipClass(type: "story" | "event" | "drop") {
+  if (type === "story") {
+    return `${styles.chip} ${styles.chipSuccess}`;
   }
-];
-
-function normalizeProfiles(profiles: CreatorProfile[]): CommunityCard[] {
-  if (!profiles.length) {
-    return seededCommunity;
+  if (type === "event") {
+    return `${styles.chip} ${styles.chipWarn}`;
   }
-
-  return profiles.map((profile, index) => ({
-    id: profile.id,
-    name: profile.display_name,
-    tagline: profile.tagline || "Creator profile currently updating bio.",
-    discipline: profile.primary_discipline || "Creator",
-    handle: `@creator${profile.id}`,
-    vibe: ["Story Producer", "Skate Lead", "Designer", "Organizer"][index % 4]
-  }));
+  return `${styles.chip} ${styles.chipNeutral}`;
 }
 
-const profileInteractions = [
-  "Follow + creator score cards with weekly momentum indicators.",
-  "Pinned reels of articles, event recaps, and product styling shots.",
-  "Mutual crew visibility to support discovery between city scenes.",
-  "Role-aware dashboard actions for Author, Editor, and Admin users."
-];
-
 export default async function CommunityPage() {
-  const fetched = await getProfiles().catch(() => []);
-  const profiles = normalizeProfiles(fetched);
+  const [feed, creators] = await Promise.all([getCommunityFeedMvp(), getCreatorCardsMvp()]);
 
   return (
-    <section className="stack">
-      <section className="section reveal">
-        <span className="eyebrow">Community / Creator Profiles</span>
-        <h1 className="page-title">A social layer built around crews, creators, and contribution.</h1>
-        <p className="page-subtitle">
-          Profile pages surface identity, content output, and event participation so users can follow culture leaders.
-        </p>
-      </section>
-
-      <section className="section reveal d1">
-        <header className="section-head">
-          <h2>Featured Creators</h2>
-          <p>Professional profile cards ready for follow and dashboard actions.</p>
+    <CultureLayout
+      activeNav="community"
+      eyebrow="Community / Feed"
+      title="Community feed MVP for stories, events, and product drops."
+      subtitle="This page aggregates scene activity into one feed and routes users to event detail, story detail, and creator profile pages."
+    >
+      <section className={styles.section}>
+        <header className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Feed Stream</h2>
+            <p className={styles.sectionMeta}>Each card links to its primary destination.</p>
+          </div>
         </header>
-        <div className="cards-auto">
-          {profiles.map((profile, index) => (
-            <article key={profile.id} className={`profile-card reveal d${(index % 3) + 1}`}>
-              <span className="card-label lime">{profile.vibe}</span>
-              <h3 className="card-title">{profile.name}</h3>
-              <p className="card-copy">{profile.tagline}</p>
-              <p className="card-meta">
-                {profile.discipline} - {profile.handle}
-              </p>
+        <div className={styles.grid}>
+          {feed.map((item) => (
+            <article key={item.id} className={styles.feedItem}>
+              <div className={styles.metaRow}>
+                <span className={feedChipClass(item.type)}>{item.type}</span>
+                <span>{item.publishedAt}</span>
+              </div>
+              <h3 className={styles.feedTitle}>{item.title}</h3>
+              <p className={styles.cardCopy}>{item.excerpt}</p>
+              <div className={styles.authorRow}>
+                <div className={styles.authorMeta}>
+                  <p className={styles.authorName}>{item.creatorName}</p>
+                  <p className={styles.authorSmall}>@{item.creatorUsername}</p>
+                </div>
+                <span className={styles.authorSmall}>{item.engagement}</span>
+              </div>
+              <div className={styles.metaRow}>
+                <Link href={`/creators/${item.creatorUsername}`} className={`${styles.linkButton} ${styles.linkButtonGhost}`}>
+                  Creator
+                </Link>
+                <Link href={item.targetHref} className={styles.linkButton}>
+                  Open Item
+                </Link>
+              </div>
             </article>
           ))}
         </div>
       </section>
 
-      <section className="section reveal d2">
-        <header className="section-head">
-          <h2>Profile UX Direction</h2>
-          <p>Interaction model for both web and mobile creator dashboards.</p>
+      <section className={styles.section}>
+        <header className={styles.sectionHead}>
+          <div>
+            <h2 className={styles.sectionTitle}>Top Creators</h2>
+            <p className={styles.sectionMeta}>Quick access to creator profile pages.</p>
+          </div>
         </header>
-        <ul className="timeline">
-          {profileInteractions.map((item) => (
-            <li key={item}>
-              <strong>Dashboard Pattern</strong>
-              <span>{item}</span>
-            </li>
+        <div className={`${styles.grid} ${styles.gridFour}`}>
+          {creators.slice(0, 4).map((creator) => (
+            <article key={creator.id} className={styles.card}>
+              <span className={styles.chip}>{creator.discipline}</span>
+              <h3 className={styles.cardTitle}>{creator.displayName}</h3>
+              <p className={styles.cardCopy}>{creator.tagline}</p>
+              <div className={styles.metaRow}>
+                <span>{creator.followers}</span>
+                <span>{creator.city}</span>
+              </div>
+              <Link href={`/creators/${creator.username}`} className={styles.linkButton}>
+                View Profile
+              </Link>
+            </article>
           ))}
-        </ul>
+        </div>
       </section>
-    </section>
+    </CultureLayout>
   );
 }

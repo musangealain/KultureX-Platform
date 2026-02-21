@@ -9,7 +9,7 @@ export const SHOP_NAV_ITEMS = [
 
 export const CULTURE_NAV_ITEMS = [
   { href: "/", label: "Home" },
-  { href: "/articles", label: "Stories" },
+  { href: "/stories", label: "Stories" },
   { href: "/events", label: "Events" },
   { href: "/community", label: "Community" },
   { href: "/skate", label: "Skate" }

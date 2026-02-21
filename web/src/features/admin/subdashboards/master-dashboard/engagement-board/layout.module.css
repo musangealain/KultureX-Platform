@@ -1,0 +1,9 @@
+﻿.layout {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: 0.2fr 0.24fr 0.28fr 0.28fr;
+  grid-template-areas:
+    "hero hero hero"
+    "a b c"
+    "d d e"
+    "d d f";
+}
